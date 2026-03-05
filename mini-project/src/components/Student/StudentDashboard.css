@@ -1,0 +1,445 @@
+/* StudentDashboard.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+.student-dashboard {
+  min-height: 100vh;
+  width: 100%;
+  padding: 2rem 4rem;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+/* Reuse blob animations from GuideDashboard */
+.blob {
+  position: fixed;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: -1;
+  animation: float 20s infinite ease-in-out;
+}
+
+.blob-1 {
+  background: linear-gradient(135deg, #48cae4, #4895ef);
+  top: -100px;
+  right: -100px;
+  opacity: 0.5;
+}
+
+.blob-2 {
+  background: linear-gradient(135deg, #7209b7, #b5179e);
+  bottom: -100px;
+  left: -100px;
+  width: 400px;
+  height: 400px;
+  animation-delay: -5s;
+  opacity: 0.5;
+}
+
+.blob-3 {
+  background: linear-gradient(135deg, #4361ee, #4cc9f0);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 500px;
+  height: 500px;
+  opacity: 0.3;
+  animation-delay: -10s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+/* Header */
+.dashboard-header {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border-radius: 32px;
+  padding: 2rem 2.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.app-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff, #a8e6cf, #4cc9f0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.title-badge {
+  background: linear-gradient(135deg, #4895ef, #4cc9f0);
+  -webkit-text-fill-color: white;
+  font-size: 1rem;
+  padding: 0.35rem 1.25rem;
+  border-radius: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 20px rgba(72, 149, 239, 0.4);
+}
+
+.welcome-section {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.welcome-text {
+  font-size: 1.3rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.user-name {
+  font-weight: 700;
+  background: linear-gradient(135deg, #4cc9f0, #4895ef);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 1.5rem;
+}
+
+.guide-info {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1.5rem;
+  border-radius: 40px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.guide-info i {
+  color: #4cc9f0;
+}
+
+.guide-name {
+  font-weight: 600;
+  color: #4cc9f0;
+}
+
+/* Dashboard Grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 2.5rem;
+}
+
+/* Section Headers */
+.section-header {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+}
+
+.section-title i {
+  color: #4cc9f0;
+  font-size: 1.8rem;
+  filter: drop-shadow(0 0 15px rgba(76, 201, 240, 0.6));
+}
+
+.section-description {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  margin-left: 2.5rem;
+}
+
+/* Quick Stats */
+.quick-stats {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border-radius: 28px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-item-small {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-item-small i {
+  font-size: 2rem;
+  color: #4cc9f0;
+  filter: drop-shadow(0 0 12px #4cc9f0);
+}
+
+.stat-value-small {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  display: block;
+}
+
+.stat-label-small {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Upcoming Tasks Preview */
+.upcoming-tasks-preview {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border-radius: 28px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.upcoming-tasks-preview h3 {
+  color: #fff;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.upcoming-tasks-preview h3 i {
+  color: #4cc9f0;
+}
+
+.preview-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.preview-task-item {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  border-radius: 16px;
+  border-left: 4px solid #4cc9f0;
+}
+
+.preview-task-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.task-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.task-status-dot.pending {
+  background: #f72585;
+  box-shadow: 0 0 10px #f72585;
+}
+
+.task-status-dot.in-progress {
+  background: #4cc9f0;
+  box-shadow: 0 0 10px #4cc9f0;
+}
+
+.preview-task-title {
+  color: #fff;
+  font-weight: 500;
+}
+
+.preview-task-due {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  margin-left: 1.3rem;
+}
+
+/* Projects Grid */
+.projects-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.project-card-overview {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 28px;
+  padding: 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+}
+
+.project-card-overview:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #4cc9f0;
+  transform: translateY(-4px);
+  box-shadow: 0 25px 50px rgba(76, 201, 240, 0.25);
+}
+
+.project-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.project-card-header i {
+  font-size: 2.2rem;
+  color: #4cc9f0;
+  filter: drop-shadow(0 0 15px #4cc9f0);
+}
+
+.project-card-title {
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.project-guide {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.project-guide i {
+  font-size: 0.9rem;
+  filter: none;
+}
+
+.project-card-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.project-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+}
+
+.project-stat i {
+  color: #4cc9f0;
+  font-size: 1.2rem;
+}
+
+.project-stat span {
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.project-card-progress {
+  margin-bottom: 1.5rem;
+}
+
+.project-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.view-details {
+  color: #4cc9f0;
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 40px;
+  background: rgba(76, 201, 240, 0.1);
+}
+
+.empty-state {
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+  padding: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .student-dashboard { padding: 1.5rem 2rem; }
+}
+
+@media (max-width: 768px) {
+  .student-dashboard { padding: 1rem; }
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .quick-stats { grid-template-columns: 1fr; }
+}
+/* Fix scrolling issues */
+.student-dashboard {
+  min-height: 100vh;
+  height: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 3rem;
+}
+
+.dashboard-grid {
+  height: auto;
+  overflow: visible;
+}
+
+.projects-grid {
+  max-height: none;
+  overflow: visible;
+}
+
+/* Ensure content doesn't get cut off */
+.panel-section,
+.projects-section {
+  height: auto;
+  overflow: visible;
+}
+
+/* Make sure modals don't block scrolling */
+.modal {
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.modal-content {
+  margin: auto;
+  max-height: 90vh;
+  overflow-y: auto;
+}

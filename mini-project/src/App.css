@@ -1,0 +1,351 @@
+/* App.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  min-height: 100vh;
+  color: #fff;
+}
+
+.App {
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Login Page Styles */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-container::before {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #ffb347, #ff6b6b);
+  border-radius: 50%;
+  filter: blur(100px);
+  top: -100px;
+  right: -100px;
+  opacity: 0.3;
+  z-index: 0;
+}
+
+.login-container::after {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: linear-gradient(135deg, #4cc9f0, #4895ef);
+  border-radius: 50%;
+  filter: blur(100px);
+  bottom: -100px;
+  left: -100px;
+  opacity: 0.3;
+  z-index: 0;
+}
+
+.login-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border-radius: 48px;
+  padding: 3rem;
+  width: 100%;
+  max-width: 450px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
+  animation: slideUp 0.5s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-title {
+  font-size: 3rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #fff, #ffb347, #4cc9f0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.login-subtitle {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 2.5rem;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  color: #fff;
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin-left: 0.5rem;
+}
+
+.form-group input {
+  padding: 1rem 1.2rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  color: #fff;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #ffb347;
+  box-shadow: 0 0 0 4px rgba(255, 180, 70, 0.2);
+}
+
+.form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Role Selector */
+.role-selector-login {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.role-btn {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.role-btn i {
+  font-size: 1.2rem;
+}
+
+.role-btn.student.active {
+  background: rgba(76, 201, 240, 0.2);
+  border-color: #4cc9f0;
+  color: #4cc9f0;
+}
+
+.role-btn.guide.active {
+  background: rgba(255, 180, 70, 0.2);
+  border-color: #ffb347;
+  color: #ffb347;
+}
+
+.role-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Login Button */
+.login-btn {
+  padding: 1rem;
+  background: linear-gradient(135deg, #ffb347, #ff6b6b);
+  border: none;
+  border-radius: 30px;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.login-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(255, 180, 70, 0.4);
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-btn i {
+  font-size: 1rem;
+}
+
+/* Error Message */
+.error-message {
+  background: rgba(255, 107, 107, 0.2);
+  border: 1px solid #ff6b6b;
+  color: #ff6b6b;
+  padding: 0.75rem;
+  border-radius: 16px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* Demo Credentials */
+.demo-credentials {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.demo-credentials p {
+  color: #fff;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.demo-credentials small {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Logout Button */
+.logout-btn {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 40px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+}
+
+.logout-btn:hover {
+  background: rgba(255, 107, 107, 0.2);
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+  transform: translateY(-2px);
+}
+
+.logout-btn i {
+  font-size: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 2rem;
+  }
+  
+  .login-title {
+    font-size: 2.5rem;
+  }
+  
+  .role-selector-login {
+    grid-template-columns: 1fr;
+  }
+  
+  .logout-btn {
+    top: 1rem;
+    right: 1rem;
+    padding: 0.5rem 1rem;
+  }
+}
+/* Add to App.css */
+.input-hint {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+.demo-example {
+  display: block;
+  color: #ffb347;
+  margin-top: 0.25rem;
+}
+.logout-btn {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 40px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 107, 107, 0.2);
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+  transform: translateY(-2px);
+}
+/* Add to App.css */
+html, body, #root, .App {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.App {
+  display: flex;
+  flex-direction: column;
+}
