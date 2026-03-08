@@ -24,8 +24,17 @@ const getGuideProjects = asyncHandler(async (req, res) => {
 // @access  Private/Student
 const getStudentProjects = asyncHandler(async (req, res) => {
   console.log('📋 Fetching student projects for user:', req.user.email);
+  console.log('User ID:', req.user._id);
+  console.log('User Name:', req.user.name);
   
-  const projects = await Project.find({ studentIds: req.user._id });
+  // Find projects where the student is in studentIds OR in students array (by name)
+  const projects = await Project.find({
+    $or: [
+      { studentIds: req.user._id },
+      { students: req.user.name }
+    ]
+  });
+  
   console.log(`✅ Found ${projects.length} projects for student`);
   
   res.json({
@@ -49,8 +58,13 @@ const getProjects = asyncHandler(async (req, res) => {
     projects = await Project.find({ guideId: req.user._id });
     console.log(`✅ Found ${projects.length} projects for guide`);
   } else {
-    // Students see projects they're part of
-    projects = await Project.find({ studentIds: req.user._id });
+    // Students see projects they're part of (by ID or name)
+    projects = await Project.find({
+      $or: [
+        { studentIds: req.user._id },
+        { students: req.user.name }
+      ]
+    });
     console.log(`✅ Found ${projects.length} projects for student`);
   }
 
@@ -98,6 +112,7 @@ const createProject = asyncHandler(async (req, res) => {
     project
   });
 });
+
 // @desc    Get single project with all details
 // @route   GET /api/projects/:id
 // @access  Private
@@ -114,12 +129,25 @@ const getProjectById = asyncHandler(async (req, res) => {
       });
     }
 
+    // Check if user has access to this project
+    const hasAccess = 
+      project.guideId.toString() === req.user._id.toString() ||
+      (project.studentIds && project.studentIds.includes(req.user._id)) ||
+      (project.students && project.students.includes(req.user.name));
+
+    if (!hasAccess) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to view this project'
+      });
+    }
+
     // Fetch tasks for this project
     const tasks = await Task.find({ projectId: project._id });
     console.log(`📋 Found ${tasks.length} tasks for project`);
     
     // Fetch discussions for this project
-    const discussions = await Discussion.find({ projectId: project._id });
+    const discussions = await Discussion.find({ projectId: project._id }).sort({ createdAt: -1 });
 
     res.json({
       success: true,
@@ -137,6 +165,7 @@ const getProjectById = asyncHandler(async (req, res) => {
     });
   }
 });
+
 // @desc    Update project (add students, etc.)
 // @route   PUT /api/projects/:id
 // @access  Private (Guide only)
@@ -186,12 +215,11 @@ const updateProject = asyncHandler(async (req, res) => {
   }
 });
 
-// Make sure it's in the module.exports at the bottom
 module.exports = {
   getGuideProjects,
   getStudentProjects,
   getProjects,
   createProject,
   getProjectById,
-  updateProject,  // ← THIS MUST BE HERE!
+  updateProject,
 };

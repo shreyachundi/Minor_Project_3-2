@@ -29,7 +29,8 @@ const ProjectDetails = ({
   handleAddReply,
   onCloseModals,
   assignToAll = false,
-  setAssignToAll
+  setAssignToAll,
+  unreadCount = 0  // Add this new prop for notification badge
 }) => {
   // Local state for tasks to ensure real-time updates
   const [localTasks, setLocalTasks] = useState([]);
@@ -274,9 +275,18 @@ const ProjectDetails = ({
           <i className="fas fa-tasks"></i>
           <span>Allocate Task</span>
         </button>
-        <button className="action-button discussion" onClick={onOpenDiscussion}>
+        <button 
+          className="action-button discussion" 
+          onClick={onOpenDiscussion}
+          style={{ position: 'relative' }}
+        >
           <i className="fas fa-comments"></i>
           <span>Discussion Forum</span>
+          {unreadCount > 0 && (
+            <span className="notification-badge">
+              {unreadCount}
+            </span>
+          )}
         </button>
       </div>
 

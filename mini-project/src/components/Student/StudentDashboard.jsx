@@ -1,198 +1,314 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import API from '../../services/api';
 import StudentProjectDetails from './StudentProjectDetails';
 import './StudentDashboard.css';
 
 const StudentDashboard = () => {
-  // Get user from localStorage directly - NO useAuth
-  const [user, setUser] = useState({ name: 'Student' });
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
   const [student, setStudent] = useState({
-    id: 's1',
-    name: 'Student',
-    email: 'student@acadsync.com',
-    guideName: 'Ammannamma',
-    guideId: 'g1'
+    id: '',
+    name: '',
+    email: '',
+    guideName: '',
+    guideId: ''
   });
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      setUser(userData);
-      setStudent({
-        id: 's1',
-        name: userData.name,
-        email: userData.email || 'student@acadsync.com',
-        guideName: 'Ammannamma',
-        guideId: 'g1'
-      });
-    }
-  }, []);
-
-  const [projects, setProjects] = useState([
-    {
-      id: 1,
-      name: 'AI Based Monitoring System',
-      guide: 'Ammannamma',
-      students: ['Varshitha', 'Harimya'],
-      tasks: [
-        { id: 't1', title: 'Data Collection', assignedTo: 'Varshitha', status: 'pending', dueDate: '2024-03-15', description: 'Collect training data for the AI model' },
-        { id: 't2', title: 'Model Training', assignedTo: 'Harimya', status: 'completed', dueDate: '2024-03-10', description: 'Train the initial model' }
-      ],
-      discussions: [
-        { 
-          id: 'd1', 
-          author: 'Varshitha', 
-          message: 'Should we use TensorFlow or PyTorch?', 
-          timestamp: '2024-02-23 10:30', 
-          replies: [
-            { id: 'r1', author: 'Guide Ammannamma', message: 'Let\'s start with TensorFlow - better deployment options.', timestamp: '2024-02-23 11:15' }
-          ] 
-        },
-        { 
-          id: 'd2', 
-          author: 'Guide Ammannamma', 
-          message: 'Team meeting tomorrow at 3 PM to discuss progress', 
-          timestamp: '2024-02-24 09:00', 
-          replies: [] 
-        }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Blockchain Academic Records',
-      guide: 'Ammannamma',
-      students: ['Shreya', 'Indu'],
-      tasks: [
-        { id: 't3', title: 'Smart Contract Dev', assignedTo: 'Shreya', status: 'pending', dueDate: '2024-03-20', description: 'Develop smart contracts for record storage' },
-        { id: 't4', title: 'UI Design', assignedTo: 'Indu', status: 'in-progress', dueDate: '2024-03-18', description: 'Design the user interface' },
-      ],
-      discussions: [
-        { 
-          id: 'd3', 
-          author: 'Indu', 
-          message: 'Which blockchain platform should we use?', 
-          timestamp: '2024-02-23 09:45', 
-          replies: [
-            { id: 'r2', author: 'Guide Ammannamma', message: 'Let\'s go with Ethereum for better documentation.', timestamp: '2024-02-23 10:15' }
-          ] 
-        }
-      ]
-    },
-  ]);
-
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState(null);
   const [showDiscussion, setShowDiscussion] = useState(false);
-  const [newDiscussion, setNewDiscussion] = useState({ message: '', author: student.name });
+  const [newDiscussion, setNewDiscussion] = useState({ message: '', author: '' });
   const [replyTo, setReplyTo] = useState(null);
   const [replyMessage, setReplyMessage] = useState('');
+  
+  // Notification state
+  const [unreadDiscussions, setUnreadDiscussions] = useState({});
+  const [lastChecked, setLastChecked] = useState({});
+
+  // Load user from localStorage
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    
+    console.log('🔍 StudentDashboard mounted');
+    
+    if (!token || !storedUser) {
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      const userData = JSON.parse(storedUser);
+      
+      if (userData.role !== 'student') {
+        navigate('/guide');
+        return;
+      }
+      
+      setUser(userData);
+      setStudent({
+        id: userData._id,
+        name: userData.name,
+        email: userData.email,
+        guideName: userData.guideName || 'Not Assigned',
+        guideId: userData.guideId || ''
+      });
+      setNewDiscussion({ message: '', author: userData.name });
+      
+      // Load last checked timestamps from localStorage
+      const saved = localStorage.getItem(`discussion_last_checked_${userData._id}`);
+      if (saved) {
+        setLastChecked(JSON.parse(saved));
+      }
+      
+      fetchUserProfile();
+      
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  // Logout function
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
+  // Fetch user profile
+  const fetchUserProfile = async () => {
+    try {
+      const response = await API.get('/auth/profile');
+      
+      if (response.data.success) {
+        const userData = response.data;
+        setStudent({
+          id: userData._id,
+          name: userData.name,
+          email: userData.email,
+          guideName: userData.guideName || 'Not Assigned',
+          guideId: userData.guideId || ''
+        });
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch user profile:', error);
+    }
+  };
+
+  // Fetch student's projects
+  useEffect(() => {
+    if (student.id) {
+      fetchStudentProjects();
+    }
+  }, [student.id]);
+
+  // Check for new discussions periodically
+  useEffect(() => {
+    if (projects.length > 0) {
+      checkForNewDiscussions();
+      
+      // Set up interval to check every 30 seconds
+      const interval = setInterval(checkForNewDiscussions, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [projects]);
+
+  const fetchStudentProjects = async () => {
+    try {
+      setLoading(true);
+      console.log('📡 Fetching student projects...');
+      
+      const response = await API.get('/projects/student');
+      
+      let projectsData = [];
+      if (response.data?.projects) {
+        projectsData = response.data.projects;
+      } else if (Array.isArray(response.data)) {
+        projectsData = response.data;
+      }
+      
+      setProjects(projectsData);
+      
+    } catch (error) {
+      console.error('❌ Failed to fetch projects:', error);
+      setProjects([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Check for new discussions in each project
+  const checkForNewDiscussions = async () => {
+    const newUnread = { ...unreadDiscussions };
+    
+    for (const project of projects) {
+      // Only check projects where student is a member
+      const isMember = project.students?.some(s => 
+        s.toLowerCase().trim() === student.name.toLowerCase().trim()
+      );
+      
+      if (!isMember) continue;
+      
+      try {
+        const response = await API.get(`/projects/${project._id}`);
+        if (response.data.success) {
+          const discussions = response.data.project.discussions || [];
+          const lastCheck = lastChecked[project._id] || 0;
+          
+          // Count discussions created after last check
+          const newCount = discussions.filter(d => 
+            new Date(d.createdAt) > new Date(lastCheck)
+          ).length;
+          
+          if (newCount > 0) {
+            newUnread[project._id] = newCount;
+          } else {
+            delete newUnread[project._id];
+          }
+        }
+      } catch (error) {
+        console.error(`Error checking discussions for project ${project._id}:`, error);
+      }
+    }
+    
+    setUnreadDiscussions(newUnread);
+  };
+
+  // Mark discussions as read when opening forum
+  const handleOpenDiscussion = (projectId) => {
+    const now = new Date().toISOString();
+    setLastChecked(prev => {
+      const updated = { ...prev, [projectId]: now };
+      // Save to localStorage
+      localStorage.setItem(`discussion_last_checked_${student.id}`, JSON.stringify(updated));
+      return updated;
+    });
+    
+    // Remove unread count for this project
+    setUnreadDiscussions(prev => {
+      const updated = { ...prev };
+      delete updated[projectId];
+      return updated;
+    });
+    
+    setShowDiscussion(true);
+  };
 
   // Filter projects where student is a member
   const myProjects = projects.filter(project => 
-    project.students.includes(student.name)
+    project.students?.some(s => s.toLowerCase().trim() === student.name.toLowerCase().trim())
   );
 
-  // Stats calculation for student
+  // Get all tasks assigned to this student
+  const getMyTasks = () => {
+    const allTasks = [];
+    myProjects.forEach(project => {
+      if (project.tasks && project.tasks.length > 0) {
+        const studentTasks = project.tasks.filter(task => 
+          task.assignedTo && task.assignedTo.toLowerCase().trim() === student.name.toLowerCase().trim()
+        );
+        allTasks.push(...studentTasks);
+      }
+    });
+    return allTasks;
+  };
+
+  // Get pending tasks
+  const getPendingTasks = () => {
+    return getMyTasks().filter(task => task.status !== 'completed');
+  };
+
+  const myTasks = getMyTasks();
+  const pendingTasks = getPendingTasks();
+
   const stats = {
     totalProjects: myProjects.length,
-    pendingTasks: myProjects.reduce((acc, p) => 
-      acc + p.tasks.filter(t => t.assignedTo === student.name && t.status === 'pending').length, 0
-    ),
-    completedTasks: myProjects.reduce((acc, p) => 
-      acc + p.tasks.filter(t => t.assignedTo === student.name && t.status === 'completed').length, 0
-    ),
-    inProgressTasks: myProjects.reduce((acc, p) => 
-      acc + p.tasks.filter(t => t.assignedTo === student.name && t.status === 'in-progress').length, 0
-    )
+    pendingTasks: pendingTasks.length,
+    completedTasks: myTasks.filter(t => t.status === 'completed').length,
+    inProgressTasks: myTasks.filter(t => t.status === 'in-progress').length
   };
 
-  const handleAddDiscussion = () => {
+  const handleProjectClick = async (project) => {
+    console.log('📂 Project clicked:', project._id);
+    
+    try {
+      setLoading(true);
+      
+      const response = await API.get(`/projects/${project._id}`);
+      
+      if (response.data.success) {
+        const projectWithTasks = response.data.project;
+        setSelectedProject(projectWithTasks);
+      } else {
+        setSelectedProject(project);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching project details:', error);
+      setSelectedProject(project);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddDiscussion = async () => {
     if (!newDiscussion.message || !selectedProject) return;
     
-    const discussion = {
-      id: Date.now().toString(),
-      author: student.name,
-      message: newDiscussion.message,
-      timestamp: new Date().toLocaleString(),
-      replies: []
-    };
-    
-    setProjects(projects.map(p => 
-      p.id === selectedProject.id 
-        ? { ...p, discussions: [...p.discussions, discussion] }
-        : p
-    ));
-    
-    setSelectedProject({
-      ...selectedProject,
-      discussions: [...selectedProject.discussions, discussion]
-    });
-    
-    setNewDiscussion({ message: '', author: student.name });
-    setShowDiscussion(false);
+    try {
+      const response = await API.post('/discussions', {
+        message: newDiscussion.message,
+        projectId: selectedProject._id
+      });
+      
+      const updatedProject = await API.get(`/projects/${selectedProject._id}`);
+      setSelectedProject(updatedProject.data.project);
+      
+      setNewDiscussion({ message: '', author: student.name });
+      setShowDiscussion(false);
+      
+    } catch (error) {
+      console.error('❌ Failed to create discussion:', error);
+    }
   };
 
-  const handleAddReply = (discussionId) => {
+  const handleAddReply = async (discussionId) => {
     if (!replyMessage || !selectedProject) return;
     
-    const reply = {
-      id: Date.now().toString(),
-      author: student.name,
-      message: replyMessage,
-      timestamp: new Date().toLocaleString()
-    };
-    
-    const updatedDiscussions = selectedProject.discussions.map(d => 
-      d.id === discussionId 
-        ? { ...d, replies: [...d.replies, reply] }
-        : d
-    );
-    
-    setProjects(projects.map(p => 
-      p.id === selectedProject.id 
-        ? { ...p, discussions: updatedDiscussions }
-        : p
-    ));
-    
-    setSelectedProject({
-      ...selectedProject,
-      discussions: updatedDiscussions
-    });
-    
-    setReplyMessage('');
-    setReplyTo(null);
-  };
-
-  const updateTaskStatus = (taskId, newStatus) => {
-    if (!selectedProject) return;
-    
-    const updatedTasks = selectedProject.tasks.map(t => 
-      t.id === taskId ? { ...t, status: newStatus } : t
-    );
-    
-    setProjects(projects.map(p => 
-      p.id === selectedProject.id 
-        ? { ...p, tasks: updatedTasks }
-        : p
-    ));
-    
-    setSelectedProject({
-      ...selectedProject,
-      tasks: updatedTasks
-    });
+    try {
+      const response = await API.post(`/discussions/${discussionId}/replies`, {
+        message: replyMessage
+      });
+      
+      const updatedProject = await API.get(`/projects/${selectedProject._id}`);
+      setSelectedProject(updatedProject.data.project);
+      
+      setReplyMessage('');
+      setReplyTo(null);
+      
+    } catch (error) {
+      console.error('❌ Failed to add reply:', error);
+    }
   };
 
   const getProjectProgress = (project) => {
-    if (project.tasks.length === 0) return 0;
+    if (!project.tasks || project.tasks.length === 0) return 0;
     const completed = project.tasks.filter(t => t.status === 'completed').length;
     return Math.round((completed / project.tasks.length) * 100);
   };
 
   const getMyTaskProgress = (project) => {
-    const myTasks = project.tasks.filter(t => t.assignedTo === student.name);
+    const myTasks = project.tasks?.filter(t => 
+      t.assignedTo && t.assignedTo.toLowerCase().trim() === student.name.toLowerCase().trim()
+    ) || [];
     if (myTasks.length === 0) return 0;
     const completed = myTasks.filter(t => t.status === 'completed').length;
     return Math.round((completed / myTasks.length) * 100);
   };
+
+  if (loading) {
+    return <div className="loading">Loading student dashboard...</div>;
+  }
 
   if (selectedProject) {
     return (
@@ -200,15 +316,14 @@ const StudentDashboard = () => {
         project={selectedProject}
         student={student}
         onBack={() => setSelectedProject(null)}
-        onOpenDiscussion={() => setShowDiscussion(true)}
-        onUpdateTaskStatus={updateTaskStatus}
+        onOpenDiscussion={() => handleOpenDiscussion(selectedProject._id)}
         showDiscussion={showDiscussion}
         newDiscussion={newDiscussion}
         setNewDiscussion={setNewDiscussion}
         replyTo={replyTo}
         setReplyTo={setReplyTo}
         replyMessage={replyMessage}
-        setReplyMessage={setReplyMessage}
+        setReplyMessage={replyMessage}
         handleAddDiscussion={handleAddDiscussion}
         handleAddReply={handleAddReply}
         onCloseModals={() => {
@@ -231,14 +346,19 @@ const StudentDashboard = () => {
             AcadSync
             <span className="title-badge">Student Dashboard</span>
           </h1>
-          <div className="welcome-section">
-            <p className="welcome-text">
-              Welcome back, <span className="user-name">{student.name}</span>
-            </p>
-            <p className="guide-info">
-              <i className="fas fa-chalkboard-teacher"></i>
-              Your Guide: <span className="guide-name">{student.guideName}</span>
-            </p>
+          <div className="header-right">
+            <div className="welcome-section">
+              <p className="welcome-text">
+                Welcome back, <span className="user-name">{student.name}</span>
+              </p>
+              <p className="guide-info">
+                <i className="fas fa-chalkboard-teacher"></i>
+                Your Guide: <span className="guide-name">{student.guideName}</span>
+              </p>
+            </div>
+            <button className="logout-btn" onClick={handleLogout}>
+              <i className="fas fa-sign-out-alt"></i> Logout
+            </button>
           </div>
         </div>
       </header>
@@ -289,21 +409,24 @@ const StudentDashboard = () => {
           {/* Upcoming Tasks Preview */}
           <div className="upcoming-tasks-preview">
             <h3><i className="fas fa-tasks"></i> Your Tasks</h3>
-            {myProjects.flatMap(p => 
-              p.tasks.filter(t => t.assignedTo === student.name && t.status !== 'completed')
-            ).slice(0, 3).length > 0 ? (
+            {pendingTasks.length > 0 ? (
               <div className="preview-tasks-list">
-                {myProjects.flatMap(p => 
-                  p.tasks.filter(t => t.assignedTo === student.name && t.status !== 'completed')
-                ).slice(0, 3).map(task => (
-                  <div key={task.id} className="preview-task-item">
+                {pendingTasks.slice(0, 3).map(task => (
+                  <div key={task._id} className="preview-task-item">
                     <div className="preview-task-header">
                       <span className={`task-status-dot ${task.status}`}></span>
                       <span className="preview-task-title">{task.title}</span>
                     </div>
-                    <span className="preview-task-due">Due: {task.dueDate}</span>
+                    <span className="preview-task-due">
+                      <i className="fas fa-calendar"></i> Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
+                    </span>
                   </div>
                 ))}
+                {pendingTasks.length > 3 && (
+                  <div className="more-tasks-indicator">
+                    +{pendingTasks.length - 3} more task{pendingTasks.length - 3 !== 1 ? 's' : ''}
+                  </div>
+                )}
               </div>
             ) : (
               <p className="empty-state">No pending tasks! 🎉</p>
@@ -322,55 +445,76 @@ const StudentDashboard = () => {
           </div>
           
           <div className="projects-grid">
-            {myProjects.map((project) => (
-              <div 
-                key={project.id} 
-                className="project-card-overview"
-                onClick={() => setSelectedProject(project)}
-              >
-                <div className="project-card-header">
-                  <i className="fas fa-project-diagram"></i>
-                  <div>
-                    <h3 className="project-card-title">{project.name}</h3>
-                    <span className="project-guide">
-                      <i className="fas fa-chalkboard-teacher"></i>
-                      Guide: {project.guide}
-                    </span>
-                  </div>
-                </div>
+            {myProjects.length > 0 ? (
+              myProjects.map((project) => {
+                const unreadCount = unreadDiscussions[project._id] || 0;
                 
-                <div className="project-card-stats">
-                  <div className="project-stat">
-                    <i className="fas fa-users"></i>
-                    <span>{project.students.length} Team Members</span>
-                  </div>
-                  <div className="project-stat">
-                    <i className="fas fa-tasks"></i>
-                    <span>Your Tasks: {project.tasks.filter(t => t.assignedTo === student.name).length}</span>
-                  </div>
-                </div>
+                return (
+                  <div 
+                    key={project._id} 
+                    className="project-card-overview"
+                    onClick={() => handleProjectClick(project)}
+                  >
+                    <div className="project-card-header">
+                      <i className="fas fa-project-diagram"></i>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <h3 className="project-card-title">{project.name}</h3>
+                        {unreadCount > 0 && (
+                          <span className="notification-badge">
+                            {unreadCount}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="project-card-stats">
+                      <div className="project-stat">
+                        <i className="fas fa-users"></i>
+                        <span>{project.students?.length || 0} Team Members</span>
+                      </div>
+                      <div className="project-stat">
+                        <i className="fas fa-tasks"></i>
+                        <span>Your Tasks: {project.tasks?.filter(t => 
+                          t.assignedTo && t.assignedTo.toLowerCase().trim() === student.name.toLowerCase().trim()
+                        ).length || 0}</span>
+                      </div>
+                      <div className="project-stat">
+                        <i className="fas fa-comments"></i>
+                        <span>Discussions: {project.discussions?.length || 0}</span>
+                        {unreadCount > 0 && (
+                          <span className="notification-dot"></span>
+                        )}
+                      </div>
+                    </div>
 
-                <div className="project-card-progress">
-                  <div className="progress-label">
-                    <span>Your Progress</span>
-                    <span>{getMyTaskProgress(project)}%</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div 
-                      className="progress-fill" 
-                      style={{ width: `${getMyTaskProgress(project)}%` }}
-                    ></div>
-                  </div>
-                </div>
+                    <div className="project-card-progress">
+                      <div className="progress-label">
+                        <span>Your Progress</span>
+                        <span>{getMyTaskProgress(project)}%</span>
+                      </div>
+                      <div className="progress-bar">
+                        <div 
+                          className="progress-fill" 
+                          style={{ width: `${getMyTaskProgress(project)}%` }}
+                        ></div>
+                      </div>
+                    </div>
 
-                <div className="project-card-footer">
-                  <span className="view-details">
-                    View Project Details 
-                    <i className="fas fa-arrow-right"></i>
-                  </span>
-                </div>
+                    <div className="project-card-footer">
+                      <span className="view-details">
+                        View Project Details 
+                        <i className="fas fa-arrow-right"></i>
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="no-projects-message">
+                <i className="fas fa-folder-open" style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.5 }}></i>
+                <p>You are not assigned to any projects yet.</p>
               </div>
-            ))}
+            )}
           </div>
         </section>
       </div>

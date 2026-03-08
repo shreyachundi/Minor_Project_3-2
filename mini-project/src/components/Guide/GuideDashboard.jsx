@@ -25,48 +25,51 @@ const GuideDashboard = () => {
   const [replyTo, setReplyTo] = useState(null);
   const [replyMessage, setReplyMessage] = useState('');
   const [assignToAll, setAssignToAll] = useState(false);
+  
+  // Notification state - only for discussion forum button
+  const [unreadDiscussions, setUnreadDiscussions] = useState({});
+  const [lastChecked, setLastChecked] = useState({});
 
   // Load user from localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
     
-    console.log('🔍 GuideDashboard mounted');
-    console.log('Stored user:', storedUser);
-    console.log('Token exists:', !!token);
-    
     if (!token || !storedUser) {
-      console.log('❌ No token or user, redirecting to login');
       navigate('/login');
       return;
     }
     
     try {
       const userData = JSON.parse(storedUser);
-      console.log('👤 User data:', userData);
       
       if (userData.role !== 'guide') {
-        console.log('❌ User is not a guide, redirecting to student page');
         navigate('/student');
         return;
       }
       
       setUser(userData);
-      // Set author for discussions
       setNewDiscussion(prev => ({ ...prev, author: `Guide ${userData.name}` }));
+      
+      // Load last checked timestamps from localStorage
+      const saved = localStorage.getItem(`discussion_last_checked_${userData._id}`);
+      if (saved) {
+        setLastChecked(JSON.parse(saved));
+      }
     } catch (error) {
       console.error('Error parsing user data:', error);
       navigate('/login');
     }
   }, [navigate]);
 
-  // API Base URL check
-  useEffect(() => {
-    console.log('🔍 API Base URL:', API.defaults?.baseURL);
-    console.log('🔍 Full projects URL:', API.defaults?.baseURL + '/projects');
-  }, []);
+  // Logout function
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
-  // Fetch projects on mount and when returning from project details
+  // Fetch projects
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -78,25 +81,29 @@ const GuideDashboard = () => {
     }
   }, [selectedProject]);
 
+  // Check for new discussions periodically
+  useEffect(() => {
+    if (projects.length > 0) {
+      checkForNewDiscussions();
+      
+      // Set up interval to check every 30 seconds
+      const interval = setInterval(checkForNewDiscussions, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [projects]);
+
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      console.log('📥 Fetching projects from:', API.defaults?.baseURL + '/projects');
-      
       const response = await API.get('/projects');
-      console.log('📥 Full response:', response);
-      console.log('📥 Response data:', response.data);
       
       let projectsData = [];
       if (response.data?.projects) {
         projectsData = response.data.projects;
       } else if (Array.isArray(response.data)) {
         projectsData = response.data;
-      } else if (response.data?.data && Array.isArray(response.data.data)) {
-        projectsData = response.data.data;
       }
       
-      console.log('✅ Projects loaded:', projectsData.length, 'projects');
       setProjects(projectsData);
       
     } catch (error) {
@@ -107,6 +114,57 @@ const GuideDashboard = () => {
     }
   };
 
+  // Check for new discussions in each project
+  const checkForNewDiscussions = async () => {
+    const newUnread = { ...unreadDiscussions };
+    
+    for (const project of projects) {
+      try {
+        const response = await API.get(`/projects/${project._id}`);
+        if (response.data.success) {
+          const discussions = response.data.project.discussions || [];
+          const lastCheck = lastChecked[project._id] || 0;
+          
+          // Count discussions created after last check
+          const newCount = discussions.filter(d => 
+            new Date(d.createdAt) > new Date(lastCheck)
+          ).length;
+          
+          if (newCount > 0) {
+            newUnread[project._id] = newCount;
+          } else {
+            delete newUnread[project._id];
+          }
+        }
+      } catch (error) {
+        console.error(`Error checking discussions for project ${project._id}:`, error);
+      }
+    }
+    
+    setUnreadDiscussions(newUnread);
+  };
+
+  // Mark discussions as read when opening forum
+  const handleOpenDiscussion = (projectId) => {
+    const now = new Date().toISOString();
+    setLastChecked(prev => {
+      const updated = { ...prev, [projectId]: now };
+      // Save to localStorage
+      localStorage.setItem(`discussion_last_checked_${user?._id}`, JSON.stringify(updated));
+      return updated;
+    });
+    
+    // Remove unread count for this project
+    setUnreadDiscussions(prev => {
+      const updated = { ...prev };
+      delete updated[projectId];
+      return updated;
+    });
+    
+    setShowDiscussion(true);
+  };
+
+  // Rest of your existing functions remain the same
   const handleAddProject = async () => {
     if (!newProject.name) {
       alert('Please enter a project name');
@@ -115,17 +173,10 @@ const GuideDashboard = () => {
     
     try {
       setLoading(true);
-      console.log('📤 Creating project with data:', {
-        name: newProject.name,
-        students: newProject.student ? [newProject.student] : []
-      });
-      
       const response = await API.post('/projects', {
         name: newProject.name,
         students: newProject.student ? [newProject.student] : []
       });
-      
-      console.log('✅ Project created:', response.data);
       
       const newProjectData = response.data.project || response.data;
       setProjects([...projects, newProjectData]);
@@ -141,7 +192,6 @@ const GuideDashboard = () => {
     }
   };
 
-  // ========== STUDENT MANAGEMENT ==========
   const handleAddStudent = async () => {
     if (!newStudent.name || !selectedProject) {
       alert('Please enter a student name');
@@ -150,15 +200,10 @@ const GuideDashboard = () => {
     
     try {
       setLoading(true);
-      console.log('📤 Adding student to project:', selectedProject._id);
-      
       const response = await API.put(`/projects/${selectedProject._id}`, {
         students: [...selectedProject.students, newStudent.name]
       });
       
-      console.log('✅ Student added:', response.data);
-      
-      // Update selected project with new student
       setSelectedProject({
         ...selectedProject,
         students: [...selectedProject.students, newStudent.name]
@@ -176,7 +221,6 @@ const GuideDashboard = () => {
     }
   };
 
-  // ========== TASK MANAGEMENT ==========
   const handleAllocateTask = async (taskData = null) => {
     if (!selectedProject) return;
     
@@ -184,9 +228,6 @@ const GuideDashboard = () => {
       setLoading(true);
       
       if (Array.isArray(taskData)) {
-        // Multiple tasks (assign to all)
-        console.log('📤 Creating multiple tasks');
-        
         const taskPromises = taskData.map(task => 
           API.post('/tasks', {
             title: task.title,
@@ -197,27 +238,21 @@ const GuideDashboard = () => {
         );
         
         await Promise.all(taskPromises);
-        console.log('✅ Multiple tasks created');
         
       } else {
-        // Single task
         if (!newTask.title || !newTask.assignedTo) {
           alert('Please fill in all task details');
           return;
         }
         
-        console.log('📤 Creating task:', newTask);
         await API.post('/tasks', {
           title: newTask.title,
           assignedTo: newTask.assignedTo,
           projectId: selectedProject._id,
           status: 'pending'
         });
-        
-        console.log('✅ Task created');
       }
       
-      // Fetch updated project data
       const updatedProject = await API.get(`/projects/${selectedProject._id}`);
       setSelectedProject(updatedProject.data.project);
       
@@ -234,20 +269,14 @@ const GuideDashboard = () => {
     }
   };
 
-  // ========== TASK STATUS UPDATE ==========
   const updateTaskStatus = async (taskId, newStatus) => {
     if (!selectedProject) return;
     
     try {
-      console.log('📤 Updating task status:', taskId, newStatus);
-      
       await API.put(`/tasks/${taskId}/status`, {
         status: newStatus
       });
       
-      console.log('✅ Task status updated');
-      
-      // Update selected project tasks
       const updatedTasks = selectedProject.tasks.map(t => 
         t._id === taskId ? { ...t, status: newStatus } : t
       );
@@ -263,7 +292,6 @@ const GuideDashboard = () => {
     }
   };
 
-  // ========== DISCUSSION FORUM ==========
   const handleAddDiscussion = async () => {
     if (!newDiscussion.message || !selectedProject) {
       alert('Please enter a message');
@@ -272,7 +300,6 @@ const GuideDashboard = () => {
     
     try {
       setLoading(true);
-      console.log('📤 Creating discussion for project:', selectedProject._id);
       
       const response = await API.post('/discussions', {
         author: `Guide ${user?.name}`,
@@ -280,9 +307,6 @@ const GuideDashboard = () => {
         projectId: selectedProject._id
       });
       
-      console.log('✅ Discussion created:', response.data);
-      
-      // Fetch updated project data
       const updatedProject = await API.get(`/projects/${selectedProject._id}`);
       setSelectedProject(updatedProject.data.project);
       
@@ -305,16 +329,11 @@ const GuideDashboard = () => {
     }
     
     try {
-      console.log('📤 Adding reply to discussion:', discussionId);
-      
       await API.post(`/discussions/${discussionId}/replies`, {
         author: `Guide ${user?.name}`,
         message: replyMessage
       });
       
-      console.log('✅ Reply added');
-      
-      // Fetch updated project data
       const updatedProject = await API.get(`/projects/${selectedProject._id}`);
       setSelectedProject(updatedProject.data.project);
       
@@ -327,7 +346,6 @@ const GuideDashboard = () => {
     }
   };
 
-  // ========== MODAL CONTROLS ==========
   const handleCloseModals = () => {
     setShowAddStudent(false);
     setShowAllocateTask(false);
@@ -353,28 +371,23 @@ const GuideDashboard = () => {
         project={selectedProject}
         onBack={() => setSelectedProject(null)}
         onProjectUpdate={(updatedProject) => setSelectedProject(updatedProject)}
-        // Student management
         onAddStudent={() => setShowAddStudent(true)}
         onAllocateTask={() => setShowAllocateTask(true)}
-        onOpenDiscussion={() => setShowDiscussion(true)}
+        onOpenDiscussion={() => handleOpenDiscussion(selectedProject._id)}
         onUpdateTaskStatus={updateTaskStatus}
-        // Modal states
         showAddStudent={showAddStudent}
         showAllocateTask={showAllocateTask}
         showDiscussion={showDiscussion}
-        // Form data
         newStudent={newStudent}
         setNewStudent={setNewStudent}
         newTask={newTask}
         setNewTask={setNewTask}
         newDiscussion={newDiscussion}
         setNewDiscussion={setNewDiscussion}
-        // Reply handling
         replyTo={replyTo}
         setReplyTo={setReplyTo}
         replyMessage={replyMessage}
         setReplyMessage={setReplyMessage}
-        // Action handlers
         handleAddStudent={handleAddStudent}
         handleAllocateTask={handleAllocateTask}
         handleAddDiscussion={handleAddDiscussion}
@@ -382,6 +395,7 @@ const GuideDashboard = () => {
         onCloseModals={handleCloseModals}
         assignToAll={assignToAll}
         setAssignToAll={setAssignToAll}
+        unreadCount={unreadDiscussions[selectedProject._id] || 0}
       />
     );
   }
@@ -398,9 +412,14 @@ const GuideDashboard = () => {
             AcadSync
             <span className="title-badge">Guide Dashboard</span>
           </h1>
-          <p className="welcome-text">
-            Welcome back, <span className="user-name">{user?.name || 'Guide'}</span>
-          </p>
+          <div className="header-right">
+            <p className="welcome-text">
+              Welcome back, <span className="user-name">{user?.name || 'Guide'}</span>
+            </p>
+            <button className="logout-btn" onClick={handleLogout}>
+              <i className="fas fa-sign-out-alt"></i> Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -484,10 +503,9 @@ const GuideDashboard = () => {
             {projects && projects.length > 0 ? (
               projects.map((project, index) => (
                 <div 
-                  key={project?._id || index} 
+                  key={project._id || index} 
                   className="project-card-overview"
                   onClick={() => {
-                    console.log('Selected project:', project);
                     setSelectedProject({
                       ...project,
                       students: project.students || [],

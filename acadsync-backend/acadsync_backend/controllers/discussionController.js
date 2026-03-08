@@ -113,7 +113,6 @@ const addReply = asyncHandler(async (req, res) => {
   }
 });
 
-// Export all functions
 module.exports = {
   createDiscussion,
   getProjectDiscussions,

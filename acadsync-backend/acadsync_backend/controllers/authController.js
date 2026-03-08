@@ -1,6 +1,7 @@
 const User = require('../models/User');
+const Project = require('../models/Project'); // Add this import
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs'); // Add this import
+const bcrypt = require('bcryptjs');
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -10,7 +11,7 @@ const registerUser = async (req, res) => {
     console.log('📝 Register function started');
     console.log('Request body:', req.body);
     
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, guideName } = req.body;
     
     // Validate required fields
     if (!name || !email || !password || !role) {
@@ -36,12 +37,27 @@ const registerUser = async (req, res) => {
     console.log('Password hashed successfully');
     
     // Create user with hashed password
-    const user = new User({
+    const userData = {
       name,
       email,
-      password: hashedPassword, // Use the hashed password
+      password: hashedPassword,
       role,
-    });
+    };
+    
+    // If registering as student, add guide information
+    if (role === 'student' && guideName) {
+      // Find guide by name to get guideId
+      const guide = await User.findOne({ name: guideName, role: 'guide' });
+      if (guide) {
+        userData.guideId = guide._id;
+        userData.guideName = guide.name;
+      } else {
+        // If guide not found, just store the provided guideName
+        userData.guideName = guideName;
+      }
+    }
+    
+    const user = new User(userData);
     
     // Save to database
     await user.save();
@@ -60,6 +76,8 @@ const registerUser = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      guideName: user.guideName,
+      guideId: user.guideId,
       token,
     });
     
@@ -104,6 +122,30 @@ const loginUser = async (req, res) => {
       });
     }
     
+    let guideName = user.guideName;
+    let guideId = user.guideId;
+    
+    // If user is a student and doesn't have guide info, try to find from projects
+    if (user.role === 'student') {
+      // Find a project where this student is a member
+      const project = await Project.findOne({ 
+        students: { $in: [user.name] } 
+      });
+      
+      if (project && project.guideId) {
+        // Update the student's guide info
+        guideName = project.guide;
+        guideId = project.guideId;
+        
+        // Save to user document for future logins
+        await User.updateOne(
+          { _id: user._id },
+          { $set: { guideName, guideId } }
+        );
+        console.log(`✅ Updated guide info for student ${user.name} to ${guideName}`);
+      }
+    }
+    
     // Generate token
     const token = jwt.sign(
       { id: user._id }, 
@@ -117,6 +159,8 @@ const loginUser = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      guideName: guideName || 'Not Assigned',
+      guideId: guideId,
       token,
     });
     
@@ -143,13 +187,37 @@ const getUserProfile = async (req, res) => {
       });
     }
     
+    let guideName = user.guideName;
+    let guideId = user.guideId;
+    
+    // If user is a student and doesn't have guide info, try to find from projects
+    if (user.role === 'student' && !guideName) {
+      // Find a project where this student is a member
+      const project = await Project.findOne({ 
+        students: { $in: [user.name] } 
+      });
+      
+      if (project && project.guideId) {
+        guideName = project.guide;
+        guideId = project.guideId;
+        
+        // Update the user document
+        await User.updateOne(
+          { _id: user._id },
+          { $set: { guideName, guideId } }
+        );
+        console.log(`✅ Updated guide info for student ${user.name} to ${guideName}`);
+      }
+    }
+    
     res.json({
       success: true,
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
-      guideName: user.guideName,
+      guideName: guideName || 'Not Assigned',
+      guideId: guideId,
     });
     
   } catch (error) {

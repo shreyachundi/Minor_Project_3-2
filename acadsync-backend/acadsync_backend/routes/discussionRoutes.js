@@ -7,6 +7,13 @@ const {
 } = require('../controllers/discussionController');
 const { protect } = require('../middleware/authMiddleware');
 
+// Debug middleware
+router.use((req, res, next) => {
+  console.log(`🔥 Discussion route accessed: ${req.method} ${req.url}`);
+  console.log('📦 Body:', req.body);
+  next();
+});
+
 // Create discussion
 router.post('/', protect, createDiscussion);
 

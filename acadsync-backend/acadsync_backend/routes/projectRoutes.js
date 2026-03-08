@@ -6,7 +6,7 @@ const {
   getProjects,
   createProject,
   getProjectById,
-  updateProject  // Make sure this is imported!
+  updateProject
 } = require('../controllers/projectController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -23,7 +23,7 @@ router.get('/', protect, getProjects);
 // Guide-only routes
 router.get('/guide', protect, authorize('guide'), getGuideProjects);
 router.post('/', protect, authorize('guide'), createProject);
-router.put('/:id', protect, authorize('guide'), updateProject);  // ← THIS LINE IS CRITICAL!
+router.put('/:id', protect, authorize('guide'), updateProject);
 
 // Student-only routes
 router.get('/student', protect, authorize('student'), getStudentProjects);

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import API from '../../services/api';
 import './StudentProjectDetails.css';
 
 const StudentProjectDetails = ({
@@ -15,21 +16,87 @@ const StudentProjectDetails = ({
   setReplyMessage,
   handleAddDiscussion,
   handleAddReply,
-  onCloseModals
+  onCloseModals,
+  unreadCount = 0  // Add this new prop
 }) => {
+  const [localProject, setLocalProject] = useState(project);
+  const [localTasks, setLocalTasks] = useState([]);
+  const [localDiscussions, setLocalDiscussions] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Initialize local state when project changes
+  useEffect(() => {
+    console.log('📥 Project data received:', project);
+    setLocalProject(project);
+    setLocalTasks(project?.tasks || []);
+    setLocalDiscussions(project?.discussions || []);
+  }, [project]);
+
+  // Refresh project data function
+  const refreshProjectData = async () => {
+    if (!project?._id) return;
+    
+    try {
+      setRefreshing(true);
+      console.log('🔄 Refreshing project data for:', project._id);
+      
+      const response = await API.get(`/projects/${project._id}`);
+      console.log('📥 Refreshed project data:', response.data);
+      
+      if (response.data.success) {
+        const refreshedProject = response.data.project;
+        setLocalProject(refreshedProject);
+        setLocalTasks(refreshedProject.tasks || []);
+        setLocalDiscussions(refreshedProject.discussions || []);
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing project data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const getProjectProgress = () => {
-    if (project.tasks.length === 0) return 0;
-    const completed = project.tasks.filter(t => t.status === 'completed').length;
-    return Math.round((completed / project.tasks.length) * 100);
+    if (!localTasks || localTasks.length === 0) return 0;
+    const completed = localTasks.filter(t => t.status === 'completed').length;
+    return Math.round((completed / localTasks.length) * 100);
   };
 
   const getMyTasks = () => {
-    return project.tasks.filter(t => t.assignedTo === student.name);
+    return localTasks?.filter(t => 
+      t.assignedTo && t.assignedTo.toLowerCase() === student.name.toLowerCase()
+    ) || [];
   };
 
   const getOtherTasks = () => {
-    return project.tasks.filter(t => t.assignedTo !== student.name);
+    return localTasks?.filter(t => 
+      t.assignedTo && t.assignedTo.toLowerCase() !== student.name.toLowerCase()
+    ) || [];
   };
+
+  // Group tasks by title for better display
+  const groupTasksByTitle = (tasks) => {
+    const grouped = {};
+    tasks.forEach(task => {
+      if (!grouped[task.title]) {
+        grouped[task.title] = {
+          title: task.title,
+          assignees: [],
+          tasks: [],
+          status: task.status
+        };
+      }
+      grouped[task.title].assignees.push(task.assignedTo);
+      grouped[task.title].tasks.push(task);
+    });
+    return Object.values(grouped);
+  };
+
+  const myTasks = getMyTasks();
+  const otherTasks = getOtherTasks();
+  const myGroupedTasks = groupTasksByTitle(myTasks);
+  const otherGroupedTasks = groupTasksByTitle(otherTasks);
 
   return (
     <div className="student-project-details">
@@ -38,19 +105,29 @@ const StudentProjectDetails = ({
       <div className="blob blob-3"></div>
 
       <header className="details-header">
-        <button className="back-btn" onClick={onBack}>
-          <i className="fas fa-arrow-left"></i>
-          Back to My Projects
-        </button>
+        <div className="header-top">
+          <button className="back-btn" onClick={onBack}>
+            <i className="fas fa-arrow-left"></i>
+            Back to My Projects
+          </button>
+          <button 
+            className={`refresh-btn ${refreshing ? 'spinning' : ''}`} 
+            onClick={refreshProjectData}
+            disabled={refreshing}
+          >
+            <i className={`fas fa-sync-alt ${refreshing ? 'fa-spin' : ''}`}></i>
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
         <div className="header-content">
           <h1 className="project-title">
             <i className="fas fa-project-diagram"></i>
-            {project.name}
+            {localProject?.name || 'Untitled Project'}
           </h1>
           <div className="project-meta">
-            <span><i className="fas fa-chalkboard-teacher"></i> Guide: {project.guide}</span>
-            <span><i className="fas fa-users"></i> {project.students.length} Members</span>
-            <span><i className="fas fa-comments"></i> {project.discussions.length} Discussions</span>
+            <span><i className="fas fa-chalkboard-teacher"></i> Guide: {localProject?.guide || 'Unknown'}</span>
+            <span><i className="fas fa-users"></i> {localProject?.students?.length || 0} Members</span>
+            <span><i className="fas fa-comments"></i> {localDiscussions?.length || 0} Discussions</span>
           </div>
         </div>
       </header>
@@ -66,65 +143,75 @@ const StudentProjectDetails = ({
         <p className="progress-note">Progress tracked by guide</p>
       </div>
 
-      <button className="discussion-forum-btn" onClick={onOpenDiscussion}>
+      <button 
+        className="discussion-forum-btn" 
+        onClick={onOpenDiscussion}
+        style={{ position: 'relative' }}
+      >
         <i className="fas fa-comments"></i>
         <span>Discussion Forum</span>
+        {unreadCount > 0 && (
+          <span className="notification-badge">
+            {unreadCount}
+          </span>
+        )}
         <i className="fas fa-arrow-right"></i>
       </button>
 
       <div className="tasks-section">
         <h2 className="section-title">
           <i className="fas fa-tasks"></i>
-          MY ASSIGNED TASKS
+          MY ASSIGNED TASKS ({myTasks.length})
         </h2>
-        {getMyTasks().length > 0 ? (
+        
+        {myTasks.length > 0 ? (
           <div className="tasks-grid">
-            {getMyTasks().map(task => (
-              <div key={task.id} className={`task-card ${task.status}`}>
+            {myGroupedTasks.map((group, idx) => (
+              <div key={idx} className={`task-card ${group.status}`}>
                 <div className="task-card-header">
-                  <h3 className="task-title">{task.title}</h3>
-                  <span className={`task-status ${task.status}`}>
-                    {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                  <h3 className="task-title">{group.title}</h3>
+                  <span className={`task-status ${group.status}`}>
+                    {group.status.charAt(0).toUpperCase() + group.status.slice(1)}
                   </span>
                 </div>
-                <p className="task-description">{task.description}</p>
-                <div className="task-meta">
-                  <span><i className="fas fa-calendar"></i> Due: {task.dueDate}</span>
-                  <span><i className="fas fa-user"></i> Assigned to you</span>
+                <div className="task-assignees">
+                  <i className="fas fa-user"></i>
+                  <span>Assigned to: {group.assignees.join(', ')}</span>
                 </div>
-                {/* REMOVED: Task status update dropdown - students cannot update status anymore */}
                 <div className="task-footer">
                   <span className="task-status-readonly">
                     <i className="fas fa-info-circle"></i>
-                    Status: {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                    Status: {group.status.charAt(0).toUpperCase() + group.status.slice(1)}
                   </span>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="empty-state">No tasks assigned to you yet.</p>
+          <div className="empty-tasks-container">
+            <p className="empty-state">No tasks assigned to you yet.</p>
+            <p className="empty-state-hint">Tasks will appear here once the guide allocates them.</p>
+          </div>
         )}
 
-        {getOtherTasks().length > 0 && (
+        {otherTasks.length > 0 && (
           <>
             <h2 className="section-title" style={{ marginTop: '2rem' }}>
               <i className="fas fa-users"></i>
-              TEAM TASKS
+              TEAM TASKS ({otherTasks.length})
             </h2>
             <div className="tasks-grid">
-              {getOtherTasks().map(task => (
-                <div key={task.id} className={`task-card team-task ${task.status}`}>
+              {otherGroupedTasks.map((group, idx) => (
+                <div key={idx} className={`task-card team-task ${group.status}`}>
                   <div className="task-card-header">
-                    <h3 className="task-title">{task.title}</h3>
-                    <span className={`task-status ${task.status}`}>
-                      {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                    <h3 className="task-title">{group.title}</h3>
+                    <span className={`task-status ${group.status}`}>
+                      {group.status.charAt(0).toUpperCase() + group.status.slice(1)}
                     </span>
                   </div>
-                  <p className="task-description">{task.description}</p>
-                  <div className="task-meta">
-                    <span><i className="fas fa-calendar"></i> Due: {task.dueDate}</span>
-                    <span><i className="fas fa-user"></i> Assigned to: {task.assignedTo}</span>
+                  <div className="task-assignees">
+                    <i className="fas fa-users"></i>
+                    <span>Assigned to: {group.assignees.join(', ')}</span>
                   </div>
                 </div>
               ))}
@@ -140,7 +227,7 @@ const StudentProjectDetails = ({
           TEAM MEMBERS
         </h2>
         <div className="members-grid">
-          {project.students.map((member, idx) => (
+          {localProject?.students?.map((member, idx) => (
             <div key={idx} className={`member-card ${member === student.name ? 'current-user' : ''}`}>
               <i className="fas fa-user-circle"></i>
               <span>{member}</span>
@@ -163,8 +250,8 @@ const StudentProjectDetails = ({
             
             <div className="discussion-container">
               <div className="messages-list">
-                {project.discussions.map(disc => (
-                  <div key={disc.id} className="message-thread">
+                {localDiscussions?.map(disc => (
+                  <div key={disc._id} className="message-thread">
                     <div className="message-main">
                       <div className="message-header">
                         <div className="message-author-info">
@@ -173,20 +260,20 @@ const StudentProjectDetails = ({
                             {disc.author}
                           </span>
                         </div>
-                        <span className="message-time">{disc.timestamp}</span>
+                        <span className="message-time">{new Date(disc.createdAt).toLocaleString()}</span>
                       </div>
                       <p className="message-content">{disc.message}</p>
                       <button 
                         className="reply-btn"
-                        onClick={() => setReplyTo(replyTo === disc.id ? null : disc.id)}
+                        onClick={() => setReplyTo(replyTo === disc._id ? null : disc._id)}
                       >
                         <i className="fas fa-reply"></i>
                         Reply
                       </button>
                     </div>
 
-                    {disc.replies.map(reply => (
-                      <div key={reply.id} className="message-reply">
+                    {disc.replies?.map(reply => (
+                      <div key={reply._id} className="message-reply">
                         <div className="message-header">
                           <div className="message-author-info">
                             <i className="fas fa-user-circle"></i>
@@ -194,13 +281,13 @@ const StudentProjectDetails = ({
                               {reply.author}
                             </span>
                           </div>
-                          <span className="message-time">{reply.timestamp}</span>
+                          <span className="message-time">{new Date(reply.createdAt).toLocaleString()}</span>
                         </div>
                         <p className="message-content">{reply.message}</p>
                       </div>
                     ))}
 
-                    {replyTo === disc.id && (
+                    {replyTo === disc._id && (
                       <div className="reply-input-container">
                         <input
                           type="text"
@@ -209,11 +296,11 @@ const StudentProjectDetails = ({
                           onChange={(e) => setReplyMessage(e.target.value)}
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
-                              handleAddReply(disc.id);
+                              handleAddReply(disc._id);
                             }
                           }}
                         />
-                        <button onClick={() => handleAddReply(disc.id)}>
+                        <button onClick={() => handleAddReply(disc._id)}>
                           <i className="fas fa-paper-plane"></i>
                         </button>
                       </div>

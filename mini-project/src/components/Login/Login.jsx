@@ -14,56 +14,54 @@ const Login = () => {
   const [role, setRole] = useState("student");
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError("");
-  
-  try {
-    console.log('📤 Sending login request with:', { 
-      email, 
-      password: password ? '***' : 'missing' 
-    });
+    e.preventDefault();
+    setLoading(true);
+    setError("");
     
-    const response = await API.post('/auth/login', {
-      email,
-      password
-    });
-    
-    console.log('📥 Login response:', response.data);
-    
-    // Save token and user data
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data));
-    
-    const userRole = response.data.role;
-    console.log('👤 User role from server:', userRole);
-    
-    if (userRole === 'guide') {
-      navigate('/guide');
-    } else {
-      navigate('/student');
+    try {
+      console.log('📤 Sending login request with:', { 
+        email, 
+        password: password ? '***' : 'missing' 
+      });
+      
+      const response = await API.post('/auth/login', {
+        email,
+        password
+      });
+      
+      console.log('📥 Login response:', response.data);
+      
+      // Save token and user data
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data));
+      
+      const userRole = response.data.role;
+      console.log('👤 User role from server:', userRole);
+      
+      if (userRole === 'guide') {
+        navigate('/guide');
+      } else {
+        navigate('/student');
+      }
+      
+    } catch (error) {
+      console.error('❌ Login error details:');
+      console.error('Error object:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      // Show specific error message
+      const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
-    
-  } catch (error) {
-    console.error('❌ Login error details:');
-    console.error('Error object:', error);
-    console.error('Error response:', error.response?.data);
-    console.error('Error status:', error.response?.status);
-    console.error('Error headers:', error.response?.headers);
-    
-    // Show specific error message
-    const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
-    setError(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="login-main-container">
@@ -99,14 +97,6 @@ const Login = () => {
             required 
           />
           
-          <input 
-            type="text" 
-            placeholder="Enter Username" 
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required 
-          />
-
           <div className="login-password-field">
             <input
               type={showPassword ? "text" : "password"}
@@ -123,7 +113,6 @@ const Login = () => {
             </span>
           </div>
 
-          {/* ✅ ONLY ONE BUTTON - REMOVE ANY DUPLICATE */}
           <button 
             type="submit" 
             className="login-submit-btn"
