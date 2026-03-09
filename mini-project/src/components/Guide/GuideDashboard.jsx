@@ -20,13 +20,13 @@ const GuideDashboard = () => {
   
   // Form states
   const [newStudent, setNewStudent] = useState({ name: '' });
-  const [newTask, setNewTask] = useState({ title: '', assignedTo: '' });
+  const [newTask, setNewTask] = useState({ title: '', assignedTo: '', dueDate: '' });
   const [newDiscussion, setNewDiscussion] = useState({ message: '', author: '' });
   const [replyTo, setReplyTo] = useState(null);
   const [replyMessage, setReplyMessage] = useState('');
   const [assignToAll, setAssignToAll] = useState(false);
   
-  // Notification state - only for discussion forum button
+  // Notification state
   const [unreadDiscussions, setUnreadDiscussions] = useState({});
   const [lastChecked, setLastChecked] = useState({});
 
@@ -164,10 +164,9 @@ const GuideDashboard = () => {
     setShowDiscussion(true);
   };
 
-  // Rest of your existing functions remain the same
+  // Handle Add Project
   const handleAddProject = async () => {
     if (!newProject.name) {
-      alert('Please enter a project name');
       return;
     }
     
@@ -182,93 +181,109 @@ const GuideDashboard = () => {
       setProjects([...projects, newProjectData]);
       setNewProject({ name: '', student: '' });
       setShowAddProject(false);
-      alert('Project created successfully!');
       
     } catch (error) {
       console.error('❌ Failed to create project:', error);
-      alert(error.response?.data?.message || 'Failed to create project');
     } finally {
       setLoading(false);
     }
   };
 
+  // Handle Add Student
   const handleAddStudent = async () => {
     if (!newStudent.name || !selectedProject) {
-      alert('Please enter a student name');
       return;
     }
     
     try {
       setLoading(true);
-      const response = await API.put(`/projects/${selectedProject._id}`, {
+      await API.put(`/projects/${selectedProject._id}`, {
         students: [...selectedProject.students, newStudent.name]
       });
       
-      setSelectedProject({
-        ...selectedProject,
-        students: [...selectedProject.students, newStudent.name]
-      });
-      
-      setNewStudent({ name: '' });
-      setShowAddStudent(false);
-      alert('Student added successfully!');
-      
-    } catch (error) {
-      console.error('❌ Failed to add student:', error);
-      alert(error.response?.data?.message || 'Failed to add student');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAllocateTask = async (taskData = null) => {
-    if (!selectedProject) return;
-    
-    try {
-      setLoading(true);
-      
-      if (Array.isArray(taskData)) {
-        const taskPromises = taskData.map(task => 
-          API.post('/tasks', {
-            title: task.title,
-            assignedTo: task.assignedTo,
-            projectId: selectedProject._id,
-            status: 'pending'
-          })
-        );
-        
-        await Promise.all(taskPromises);
-        
-      } else {
-        if (!newTask.title || !newTask.assignedTo) {
-          alert('Please fill in all task details');
-          return;
-        }
-        
-        await API.post('/tasks', {
-          title: newTask.title,
-          assignedTo: newTask.assignedTo,
-          projectId: selectedProject._id,
-          status: 'pending'
-        });
-      }
-      
+      // Refresh project data
       const updatedProject = await API.get(`/projects/${selectedProject._id}`);
       setSelectedProject(updatedProject.data.project);
       
-      setNewTask({ title: '', assignedTo: '' });
-      setAssignToAll(false);
-      setShowAllocateTask(false);
-      alert('Task(s) allocated successfully!');
+      setNewStudent({ name: '' });
+      setShowAddStudent(false);
       
     } catch (error) {
-      console.error('❌ Failed to allocate task:', error);
-      alert(error.response?.data?.message || 'Failed to allocate task');
+      console.error('❌ Failed to add student:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleAllocateTask = async (taskData) => {
+  if (!selectedProject) {
+    console.log('❌ No selected project');
+    return;
+  }
+  
+  console.log('📤 handleAllocateTask called with:', taskData);
+  console.log('📤 Selected project ID:', selectedProject._id);
+  
+  try {
+    setLoading(true);
+    
+    if (Array.isArray(taskData)) {
+      console.log('📤 Creating multiple tasks:', taskData);
+      
+      const taskPromises = taskData.map(task => {
+        console.log('📤 Sending task to API:', {
+          title: task.title,
+          assignedTo: task.assignedTo,
+          projectId: selectedProject._id,
+          dueDate: task.dueDate
+        });
+        
+        return API.post('/tasks', {
+          title: task.title,
+          assignedTo: task.assignedTo,
+          projectId: selectedProject._id,
+          status: task.status || 'pending',
+          dueDate: task.dueDate
+        });
+      });
+      
+      const responses = await Promise.all(taskPromises);
+      console.log('✅ Multiple tasks created:', responses);
+      
+    } else {
+      console.log('📤 Creating single task:', taskData);
+      
+      const response = await API.post('/tasks', {
+        title: taskData.title,
+        assignedTo: taskData.assignedTo,
+        projectId: selectedProject._id,
+        status: taskData.status || 'pending',
+        dueDate: taskData.dueDate
+      });
+      
+      console.log('✅ Task created response:', response.data);
+    }
+    
+    // Refresh project data
+    const updatedProject = await API.get(`/projects/${selectedProject._id}`);
+    setSelectedProject(updatedProject.data.project);
+    
+    // Reset form
+    setNewTask({ title: '', assignedTo: '', dueDate: '' });
+    setAssignToAll(false);
+    setShowAllocateTask(false);
+    
+  } catch (error) {
+    console.error('❌ Failed to allocate task:', error);
+    console.error('❌ Error response:', error.response?.data);
+    console.error('❌ Error status:', error.response?.status);
+    // Show alert so you know it failed
+    alert(error.response?.data?.message || 'Failed to allocate task');
+  } finally {
+    setLoading(false);
+  }
+};
+  // Update Task Status
   const updateTaskStatus = async (taskId, newStatus) => {
     if (!selectedProject) return;
     
@@ -288,20 +303,19 @@ const GuideDashboard = () => {
       
     } catch (error) {
       console.error('❌ Failed to update task status:', error);
-      alert(error.response?.data?.message || 'Failed to update task status');
     }
   };
 
+  // Handle Add Discussion
   const handleAddDiscussion = async () => {
     if (!newDiscussion.message || !selectedProject) {
-      alert('Please enter a message');
       return;
     }
     
     try {
       setLoading(true);
       
-      const response = await API.post('/discussions', {
+      await API.post('/discussions', {
         author: `Guide ${user?.name}`,
         message: newDiscussion.message,
         projectId: selectedProject._id
@@ -312,19 +326,17 @@ const GuideDashboard = () => {
       
       setNewDiscussion({ message: '', author: `Guide ${user?.name}` });
       setShowDiscussion(false);
-      alert('Discussion posted successfully!');
       
     } catch (error) {
       console.error('❌ Failed to create discussion:', error);
-      alert(error.response?.data?.message || 'Failed to create discussion');
     } finally {
       setLoading(false);
     }
   };
 
+  // Handle Add Reply
   const handleAddReply = async (discussionId) => {
     if (!replyMessage || !selectedProject) {
-      alert('Please enter a reply message');
       return;
     }
     
@@ -342,7 +354,6 @@ const GuideDashboard = () => {
       
     } catch (error) {
       console.error('❌ Failed to add reply:', error);
-      alert(error.response?.data?.message || 'Failed to add reply');
     }
   };
 
@@ -352,6 +363,7 @@ const GuideDashboard = () => {
     setShowDiscussion(false);
     setReplyTo(null);
     setAssignToAll(false);
+    setNewTask({ title: '', assignedTo: '', dueDate: '' });
   };
 
   // Safe stats calculation

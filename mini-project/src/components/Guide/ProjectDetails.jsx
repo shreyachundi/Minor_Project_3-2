@@ -30,13 +30,17 @@ const ProjectDetails = ({
   onCloseModals,
   assignToAll = false,
   setAssignToAll,
-  unreadCount = 0  // Add this new prop for notification badge
+  unreadCount = 0
 }) => {
   // Local state for tasks to ensure real-time updates
   const [localTasks, setLocalTasks] = useState([]);
   const [localDiscussions, setLocalDiscussions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // New state for task deadline
+  const [taskDeadline, setTaskDeadline] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
 
   // Update local state when project changes
   useEffect(() => {
@@ -64,7 +68,6 @@ const ProjectDetails = ({
         setLocalTasks(refreshedProject.tasks || []);
         setLocalDiscussions(refreshedProject.discussions || []);
         
-        // Update the parent component's project state if needed
         if (onProjectUpdate) {
           onProjectUpdate(refreshedProject);
         }
@@ -83,7 +86,7 @@ const ProjectDetails = ({
     }
   }, [project?._id]);
 
-  // Safety check - if project is undefined, show loading or error
+  // Safety check - if project is undefined
   if (!project) {
     return (
       <div className="project-details-container">
@@ -121,15 +124,13 @@ const ProjectDetails = ({
           title: taskTitle,
           assignees: [],
           tasks: [],
-          status: task.status // Use the status from the first task of this group
+          status: task.status
         });
       }
       const group = groupedMap.get(taskTitle);
       group.assignees.push(task.assignedTo);
       group.tasks.push(task);
       
-      // For consistent status display, we'll use the status from the first task
-      // (assuming all tasks with same title should have same status)
       if (group.tasks.length > 0) {
         group.status = group.tasks[0].status;
       }
@@ -145,14 +146,11 @@ const ProjectDetails = ({
     try {
       setLoading(true);
       
-      // Update all tasks in this group to the new status
       const updatePromises = group.tasks.map(task => 
         onUpdateTaskStatus(task._id, newStatus)
       );
       
       await Promise.all(updatePromises);
-      
-      // Refresh data to get updated tasks
       await refreshProjectData();
       
     } catch (error) {
@@ -162,32 +160,57 @@ const ProjectDetails = ({
     }
   };
 
-  // Handle task allocation for single student or all members
+  // Handle task allocation with deadline
   const handleTaskSubmit = () => {
+    if (!taskDeadline) {
+      alert('Please select a deadline date');
+      return;
+    }
+
     if (assignToAll) {
-      // Create a task for each team member
+      // Create a task for each team member with deadline
       const tasks = students.map(student => ({
         title: newTask.title,
         assignedTo: student,
-        status: 'pending'
+        status: 'pending',
+        dueDate: taskDeadline
       }));
       handleAllocateTask(tasks);
     } else {
-      // Single task allocation
-      handleAllocateTask();
+      // Single task allocation with deadline
+      if (!newTask.assignedTo) {
+        alert('Please select a student');
+        return;
+      }
+      const task = {
+        title: newTask.title,
+        assignedTo: newTask.assignedTo,
+        status: 'pending',
+        dueDate: taskDeadline
+      };
+      handleAllocateTask(task);
     }
     setAssignToAll?.(false);
+    setTaskDeadline('');
+    setShowCalendar(false);
     
-    // Refresh data after a short delay to allow backend to process
     setTimeout(() => {
       refreshProjectData();
     }, 500);
   };
 
+  // Get today's date in YYYY-MM-DD format for min attribute
+  const getTodayDate = () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   // Handle adding student
   const handleAddStudentSubmit = async () => {
     await handleAddStudent();
-    // Refresh data after adding student
     setTimeout(() => {
       refreshProjectData();
     }, 500);
@@ -196,7 +219,6 @@ const ProjectDetails = ({
   // Handle adding discussion
   const handleDiscussionSubmit = async () => {
     await handleAddDiscussion();
-    // Refresh data after adding discussion
     setTimeout(() => {
       refreshProjectData();
     }, 500);
@@ -237,7 +259,7 @@ const ProjectDetails = ({
         </div>
       </header>
 
-      {/* Progress Section with Status Breakdown */}
+      {/* Progress Section */}
       <div className="progress-section">
         <div className="progress-header">
           <span className="progress-label">Overall Progress</span>
@@ -247,7 +269,6 @@ const ProjectDetails = ({
           <div className="progress-fill-large" style={{ width: `${getProjectProgress()}%` }}></div>
         </div>
         
-        {/* Task Status Breakdown */}
         {localTasks.length > 0 && (
           <div className="task-stats-breakdown">
             <div className="stat-chip pending">
@@ -311,7 +332,7 @@ const ProjectDetails = ({
           )}
         </div>
 
-        {/* Tasks Section - Grouped by Title with Status Dropdown */}
+        {/* Tasks Section */}
         <div className="details-card">
           <h2 className="card-title">
             <i className="fas fa-tasks"></i>
@@ -390,7 +411,7 @@ const ProjectDetails = ({
         </div>
       )}
 
-      {/* Allocate Task Modal */}
+      {/* Allocate Task Modal with Calendar */}
       {showAllocateTask && (
         <div className="modal" onClick={onCloseModals}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -404,6 +425,24 @@ const ProjectDetails = ({
               onChange={(e) => setNewTask?.({...newTask, title: e.target.value})}
               autoFocus
             />
+
+            {/* Deadline Selection with Calendar */}
+            <div className="deadline-section">
+              <label className="deadline-label">
+                <i className="fas fa-calendar-alt"></i> Deadline
+              </label>
+              <div className="date-picker-container">
+                <input
+                  type="date"
+                  className="date-picker"
+                  value={taskDeadline}
+                  onChange={(e) => setTaskDeadline(e.target.value)}
+                  min={getTodayDate()}
+                  required
+                />
+                <span className="date-hint">1 day before deadline, students will receive email reminder</span>
+              </div>
+            </div>
 
             {/* Assignment Type Selection */}
             <div className="assignment-type">
@@ -462,7 +501,7 @@ const ProjectDetails = ({
               <button 
                 onClick={handleTaskSubmit} 
                 className="primary"
-                disabled={!newTask?.title || (!assignToAll && !newTask?.assignedTo)}
+                disabled={!newTask?.title || (!assignToAll && !newTask?.assignedTo) || !taskDeadline}
               >
                 {assignToAll ? 'Assign to All Members' : 'Allocate Task'}
               </button>

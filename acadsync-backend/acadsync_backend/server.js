@@ -4,7 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorMiddleware');
-const startDeadlineReminderJob = require('./cron/deadlineReminder');
+const { startDeadlineReminderJob, checkDeadlines } = require('./cron/deadlineReminder');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -48,7 +48,41 @@ app.get('/', (req, res) => {
   res.json({ message: '🎉 AcadSync API is running!' });
 });
 
-// Cron job
+// Test route for manual reminder trigger
+app.post('/api/test/check-deadlines', async (req, res) => {
+  try {
+    console.log('🧪 Manually checking deadlines...');
+    await checkDeadlines();
+    res.json({ success: true, message: 'Deadline check completed' });
+  } catch (error) {
+    console.error('❌ Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Test route for email
+app.get('/api/test/email', async (req, res) => {
+  try {
+    const { sendEmail } = require('./config/emailConfig');
+    
+    const result = await sendEmail(
+      'acadsyncproject32@gmail.com',
+      '🧪 Test Email from AcadSync',
+      '<h1>Test Email</h1><p>If you receive this, email is working!</p>'
+    );
+    
+    if (result) {
+      res.json({ success: true, message: 'Test email sent successfully!' });
+    } else {
+      res.status(500).json({ success: false, message: 'Failed to send email' });
+    }
+  } catch (error) {
+    console.error('❌ Test email error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Start cron job
 startDeadlineReminderJob();
 
 // Error handler

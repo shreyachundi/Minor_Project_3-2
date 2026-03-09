@@ -16,6 +16,7 @@ const taskSchema = new mongoose.Schema({
   assignedToId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
+    required: true,
   },
   projectId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -29,7 +30,7 @@ const taskSchema = new mongoose.Schema({
   },
   dueDate: {
     type: Date,
-    default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    required: [true, 'Please add a due date'],
   },
   reminderSent: {
     type: Boolean,
@@ -39,5 +40,4 @@ const taskSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// ✅ Make sure this line is correct
 module.exports = mongoose.model('Task', taskSchema);
