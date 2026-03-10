@@ -15,23 +15,18 @@ const StudentDashboard = () => {
     guideId: ''
   });
   const [projects, setProjects] = useState([]);
+  const [allTasks, setAllTasks] = useState([]); // New state for all tasks
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState(null);
   const [showDiscussion, setShowDiscussion] = useState(false);
   const [newDiscussion, setNewDiscussion] = useState({ message: '', author: '' });
   const [replyTo, setReplyTo] = useState(null);
   const [replyMessage, setReplyMessage] = useState('');
-  
-  // Notification state
-  const [unreadDiscussions, setUnreadDiscussions] = useState({});
-  const [lastChecked, setLastChecked] = useState({});
 
   // Load user from localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
-    
-    console.log('🔍 StudentDashboard mounted');
     
     if (!token || !storedUser) {
       navigate('/login');
@@ -55,12 +50,6 @@ const StudentDashboard = () => {
         guideId: userData.guideId || ''
       });
       setNewDiscussion({ message: '', author: userData.name });
-      
-      // Load last checked timestamps from localStorage
-      const saved = localStorage.getItem(`discussion_last_checked_${userData._id}`);
-      if (saved) {
-        setLastChecked(JSON.parse(saved));
-      }
       
       fetchUserProfile();
       
@@ -97,23 +86,12 @@ const StudentDashboard = () => {
     }
   };
 
-  // Fetch student's projects
+  // Fetch student's projects and all tasks
   useEffect(() => {
     if (student.id) {
       fetchStudentProjects();
     }
   }, [student.id]);
-
-  // Check for new discussions periodically
-  useEffect(() => {
-    if (projects.length > 0) {
-      checkForNewDiscussions();
-      
-      // Set up interval to check every 30 seconds
-      const interval = setInterval(checkForNewDiscussions, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [projects]);
 
   const fetchStudentProjects = async () => {
     try {
@@ -131,6 +109,9 @@ const StudentDashboard = () => {
       
       setProjects(projectsData);
       
+      // After fetching projects, get all tasks for this student
+      fetchAllStudentTasks(projectsData);
+      
     } catch (error) {
       console.error('❌ Failed to fetch projects:', error);
       setProjects([]);
@@ -139,96 +120,66 @@ const StudentDashboard = () => {
     }
   };
 
-  // Check for new discussions in each project
-  const checkForNewDiscussions = async () => {
-    const newUnread = { ...unreadDiscussions };
-    
-    for (const project of projects) {
-      // Only check projects where student is a member
-      const isMember = project.students?.some(s => 
-        s.toLowerCase().trim() === student.name.toLowerCase().trim()
-      );
+  // Fetch all tasks from all projects for this student
+  const fetchAllStudentTasks = async (projectsList) => {
+    try {
+      const allStudentTasks = [];
       
-      if (!isMember) continue;
-      
-      try {
-        const response = await API.get(`/projects/${project._id}`);
-        if (response.data.success) {
-          const discussions = response.data.project.discussions || [];
-          const lastCheck = lastChecked[project._id] || 0;
-          
-          // Count discussions created after last check
-          const newCount = discussions.filter(d => 
-            new Date(d.createdAt) > new Date(lastCheck)
-          ).length;
-          
-          if (newCount > 0) {
-            newUnread[project._id] = newCount;
-          } else {
-            delete newUnread[project._id];
+      // Loop through each project and get its tasks
+      for (const project of projectsList) {
+        try {
+          const response = await API.get(`/projects/${project._id}`);
+          if (response.data.success) {
+            const projectTasks = response.data.project.tasks || [];
+            
+            // Filter tasks assigned to this student
+            const studentTasks = projectTasks.filter(task => 
+              task.assignedTo && task.assignedTo.toLowerCase().trim() === student.name.toLowerCase().trim()
+            );
+            
+            // Add project name to each task for reference
+            const tasksWithProject = studentTasks.map(task => ({
+              ...task,
+              projectName: project.name,
+              projectId: project._id
+            }));
+            
+            allStudentTasks.push(...tasksWithProject);
           }
+        } catch (error) {
+          console.error(`Error fetching tasks for project ${project._id}:`, error);
         }
-      } catch (error) {
-        console.error(`Error checking discussions for project ${project._id}:`, error);
       }
+      
+      console.log('📋 All student tasks:', allStudentTasks);
+      setAllTasks(allStudentTasks);
+      
+    } catch (error) {
+      console.error('❌ Error fetching all tasks:', error);
     }
-    
-    setUnreadDiscussions(newUnread);
   };
 
-  // Mark discussions as read when opening forum
-  const handleOpenDiscussion = (projectId) => {
-    const now = new Date().toISOString();
-    setLastChecked(prev => {
-      const updated = { ...prev, [projectId]: now };
-      // Save to localStorage
-      localStorage.setItem(`discussion_last_checked_${student.id}`, JSON.stringify(updated));
-      return updated;
-    });
-    
-    // Remove unread count for this project
-    setUnreadDiscussions(prev => {
-      const updated = { ...prev };
-      delete updated[projectId];
-      return updated;
-    });
-    
-    setShowDiscussion(true);
+  // Get pending tasks (not completed)
+  const getPendingTasks = () => {
+    return allTasks.filter(task => task.status !== 'completed');
   };
+
+  // Get tasks by status for stats
+  const getTasksByStatus = () => {
+    return {
+      pending: allTasks.filter(t => t.status === 'pending').length,
+      inProgress: allTasks.filter(t => t.status === 'in-progress').length,
+      completed: allTasks.filter(t => t.status === 'completed').length
+    };
+  };
+
+  const taskStats = getTasksByStatus();
+  const pendingTasks = getPendingTasks();
 
   // Filter projects where student is a member
   const myProjects = projects.filter(project => 
     project.students?.some(s => s.toLowerCase().trim() === student.name.toLowerCase().trim())
   );
-
-  // Get all tasks assigned to this student
-  const getMyTasks = () => {
-    const allTasks = [];
-    myProjects.forEach(project => {
-      if (project.tasks && project.tasks.length > 0) {
-        const studentTasks = project.tasks.filter(task => 
-          task.assignedTo && task.assignedTo.toLowerCase().trim() === student.name.toLowerCase().trim()
-        );
-        allTasks.push(...studentTasks);
-      }
-    });
-    return allTasks;
-  };
-
-  // Get pending tasks
-  const getPendingTasks = () => {
-    return getMyTasks().filter(task => task.status !== 'completed');
-  };
-
-  const myTasks = getMyTasks();
-  const pendingTasks = getPendingTasks();
-
-  const stats = {
-    totalProjects: myProjects.length,
-    pendingTasks: pendingTasks.length,
-    completedTasks: myTasks.filter(t => t.status === 'completed').length,
-    inProgressTasks: myTasks.filter(t => t.status === 'in-progress').length
-  };
 
   const handleProjectClick = async (project) => {
     console.log('📂 Project clicked:', project._id);
@@ -316,7 +267,7 @@ const StudentDashboard = () => {
         project={selectedProject}
         student={student}
         onBack={() => setSelectedProject(null)}
-        onOpenDiscussion={() => handleOpenDiscussion(selectedProject._id)}
+        onOpenDiscussion={() => setShowDiscussion(true)}
         showDiscussion={showDiscussion}
         newDiscussion={newDiscussion}
         setNewDiscussion={setNewDiscussion}
@@ -351,10 +302,6 @@ const StudentDashboard = () => {
               <p className="welcome-text">
                 Welcome back, <span className="user-name">{student.name}</span>
               </p>
-              <p className="guide-info">
-                <i className="fas fa-chalkboard-teacher"></i>
-                Your Guide: <span className="guide-name">{student.guideName}</span>
-              </p>
             </div>
             <button className="logout-btn" onClick={handleLogout}>
               <i className="fas fa-sign-out-alt"></i> Logout
@@ -379,57 +326,65 @@ const StudentDashboard = () => {
             <div className="stat-item-small">
               <i className="fas fa-project-diagram"></i>
               <div>
-                <span className="stat-value-small">{stats.totalProjects}</span>
+                <span className="stat-value-small">{myProjects.length}</span>
                 <span className="stat-label-small">Projects</span>
               </div>
             </div>
             <div className="stat-item-small">
               <i className="fas fa-clock"></i>
               <div>
-                <span className="stat-value-small">{stats.pendingTasks}</span>
+                <span className="stat-value-small">{taskStats.pending}</span>
                 <span className="stat-label-small">Pending</span>
               </div>
             </div>
             <div className="stat-item-small">
               <i className="fas fa-spinner"></i>
               <div>
-                <span className="stat-value-small">{stats.inProgressTasks}</span>
+                <span className="stat-value-small">{taskStats.inProgress}</span>
                 <span className="stat-label-small">In Progress</span>
               </div>
             </div>
             <div className="stat-item-small">
               <i className="fas fa-check-circle"></i>
               <div>
-                <span className="stat-value-small">{stats.completedTasks}</span>
+                <span className="stat-value-small">{taskStats.completed}</span>
                 <span className="stat-label-small">Completed</span>
               </div>
             </div>
           </div>
 
-          {/* Upcoming Tasks Preview */}
-          <div className="upcoming-tasks-preview">
-            <h3><i className="fas fa-tasks"></i> Your Tasks</h3>
+          {/* ALL PENDING TASKS - FROM ALL PROJECTS */}
+          <div className="all-tasks-preview">
+            <h3><i className="fas fa-tasks"></i> Your Tasks (All Projects)</h3>
             {pendingTasks.length > 0 ? (
               <div className="preview-tasks-list">
-                {pendingTasks.slice(0, 3).map(task => (
+                {pendingTasks.map(task => (
                   <div key={task._id} className="preview-task-item">
                     <div className="preview-task-header">
                       <span className={`task-status-dot ${task.status}`}></span>
                       <span className="preview-task-title">{task.title}</span>
                     </div>
-                    <span className="preview-task-due">
-                      <i className="fas fa-calendar"></i> Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
-                    </span>
+                    <div className="preview-task-details">
+                      <span className="preview-project-name">
+                        <i className="fas fa-folder"></i> {task.projectName}
+                      </span>
+                      <span className="preview-task-due">
+                        <i className="fas fa-calendar"></i> Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
+                      </span>
+                    </div>
                   </div>
                 ))}
-                {pendingTasks.length > 3 && (
+                {pendingTasks.length > 5 && (
                   <div className="more-tasks-indicator">
-                    +{pendingTasks.length - 3} more task{pendingTasks.length - 3 !== 1 ? 's' : ''}
+                    +{pendingTasks.length - 5} more task{pendingTasks.length - 5 !== 1 ? 's' : ''}
                   </div>
                 )}
               </div>
             ) : (
-              <p className="empty-state">No pending tasks! 🎉</p>
+              <div className="empty-tasks">
+                <i className="fas fa-check-circle"></i>
+                <p>No pending tasks! 🎉</p>
+              </div>
             )}
           </div>
         </section>
@@ -446,69 +401,55 @@ const StudentDashboard = () => {
           
           <div className="projects-grid">
             {myProjects.length > 0 ? (
-              myProjects.map((project) => {
-                const unreadCount = unreadDiscussions[project._id] || 0;
-                
-                return (
-                  <div 
-                    key={project._id} 
-                    className="project-card-overview"
-                    onClick={() => handleProjectClick(project)}
-                  >
-                    <div className="project-card-header">
-                      <i className="fas fa-project-diagram"></i>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <h3 className="project-card-title">{project.name}</h3>
-                        {unreadCount > 0 && (
-                          <span className="notification-badge">
-                            {unreadCount}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="project-card-stats">
-                      <div className="project-stat">
-                        <i className="fas fa-users"></i>
-                        <span>{project.students?.length || 0} Team Members</span>
-                      </div>
-                      <div className="project-stat">
-                        <i className="fas fa-tasks"></i>
-                        <span>Your Tasks: {project.tasks?.filter(t => 
-                          t.assignedTo && t.assignedTo.toLowerCase().trim() === student.name.toLowerCase().trim()
-                        ).length || 0}</span>
-                      </div>
-                      <div className="project-stat">
-                        <i className="fas fa-comments"></i>
-                        <span>Discussions: {project.discussions?.length || 0}</span>
-                        {unreadCount > 0 && (
-                          <span className="notification-dot"></span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="project-card-progress">
-                      <div className="progress-label">
-                        <span>Your Progress</span>
-                        <span>{getMyTaskProgress(project)}%</span>
-                      </div>
-                      <div className="progress-bar">
-                        <div 
-                          className="progress-fill" 
-                          style={{ width: `${getMyTaskProgress(project)}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    <div className="project-card-footer">
-                      <span className="view-details">
-                        View Project Details 
-                        <i className="fas fa-arrow-right"></i>
+              myProjects.map((project) => (
+                <div 
+                  key={project._id} 
+                  className="project-card-overview"
+                  onClick={() => handleProjectClick(project)}
+                >
+                  <div className="project-card-header">
+                    <i className="fas fa-project-diagram"></i>
+                    <div>
+                      <h3 className="project-card-title">{project.name}</h3>
+                      <span className="project-guide">
+                        <i className="fas fa-chalkboard-teacher"></i>
+                        Guide: {project.guide}
                       </span>
                     </div>
                   </div>
-                );
-              })
+                  
+                  <div className="project-card-stats">
+                    <div className="project-stat">
+                      <i className="fas fa-users"></i>
+                      <span>{project.students?.length || 0} Team Members</span>
+                    </div>
+                    <div className="project-stat">
+                      <i className="fas fa-tasks"></i>
+                      <span>Your Tasks: {allTasks.filter(t => t.projectId === project._id).length}</span>
+                    </div>
+                  </div>
+
+                  <div className="project-card-progress">
+                    <div className="progress-label">
+                      <span>Your Progress</span>
+                      <span>{getMyTaskProgress(project)}%</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div 
+                        className="progress-fill" 
+                        style={{ width: `${getMyTaskProgress(project)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div className="project-card-footer">
+                    <span className="view-details">
+                      View Project Details 
+                      <i className="fas fa-arrow-right"></i>
+                    </span>
+                  </div>
+                </div>
+              ))
             ) : (
               <div className="no-projects-message">
                 <i className="fas fa-folder-open" style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.5 }}></i>

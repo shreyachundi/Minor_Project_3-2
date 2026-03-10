@@ -11,52 +11,55 @@ const checkDeadlines = async () => {
   console.log('📧 Using email:', process.env.EMAIL_USER);
   
   try {
-    // Get tomorrow's date at midnight in local time
-    const today = new Date();
-    console.log('📅 Today (local):', today.toString());
-    console.log('📅 Today (ISO):', today.toISOString());
+    // Get tomorrow's date using a more reliable method
+    const now = new Date();
     
-    const tomorrow = new Date(today);
+    // Create date objects for start and end of tomorrow
+    const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
     
     const dayAfterTomorrow = new Date(tomorrow);
     dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
     
-    console.log('📅 Tomorrow range start:', tomorrow.toISOString());
-    console.log('📅 Tomorrow range end:', dayAfterTomorrow.toISOString());
+    console.log('📅 Current time:', now.toLocaleString());
+    console.log('📅 Tomorrow start:', tomorrow.toLocaleString());
+    console.log('📅 Tomorrow end:', dayAfterTomorrow.toLocaleString());
 
-    // Find all tasks (for debugging)
+    // Find ALL tasks first (for debugging)
     const allTasks = await Task.find({});
     console.log(`📊 Total tasks in database: ${allTasks.length}`);
     
     if (allTasks.length > 0) {
-      console.log('📋 Sample task dueDate:', allTasks[0].dueDate);
+      console.log('📋 All tasks due dates:');
+      allTasks.forEach((task, index) => {
+        console.log(`   Task ${index + 1}: ${task.title} - Due: ${task.dueDate?.toLocaleString()} - Status: ${task.status} - Reminder Sent: ${task.reminderSent}`);
+      });
     }
 
-    // Find tasks due tomorrow
+    // Find tasks due tomorrow - using a more flexible date range
     const tasksDueTomorrow = await Task.find({
-      dueDate: {
-        $gte: tomorrow,
-        $lt: dayAfterTomorrow
-      },
-      status: { $ne: 'completed' },
-      reminderSent: false
+      $and: [
+        { dueDate: { $gte: tomorrow } },
+        { dueDate: { $lt: dayAfterTomorrow } },
+        { status: { $ne: 'completed' } },
+        { reminderSent: false }
+      ]
     });
 
     console.log(`📊 Found ${tasksDueTomorrow.length} tasks due tomorrow`);
 
     if (tasksDueTomorrow.length === 0) {
-      console.log('❌ No tasks due tomorrow. Check:');
-      console.log('1. Task dueDate should be between:', tomorrow.toISOString(), 'and', dayAfterTomorrow.toISOString());
+      console.log('❌ No tasks due tomorrow. Check your tasks:');
+      console.log('1. Make sure task dueDate is set to tomorrow');
       console.log('2. Task status is not "completed"');
       console.log('3. reminderSent is false');
       return;
     }
 
     for (const task of tasksDueTomorrow) {
-      console.log(`📋 Processing task: ${task.title}`);
-      console.log(`📋 Task dueDate: ${task.dueDate}`);
+      console.log(`\n📋 Processing task: ${task.title}`);
+      console.log(`📋 Task dueDate: ${task.dueDate?.toLocaleString()}`);
       console.log(`📋 Task status: ${task.status}`);
       console.log(`📋 reminderSent: ${task.reminderSent}`);
       
@@ -129,18 +132,18 @@ module.exports = {
   startDeadlineReminderJob: () => {
     console.log('⏰ Scheduling deadline reminder job...');
     
-    // Run once immediately on startup for testing
+    // Run once immediately on startup for testing (after 10 seconds to ensure DB connection)
     setTimeout(() => {
       console.log('🧪 Running initial deadline check on startup...');
       checkDeadlines();
-    }, 5000); // Wait 5 seconds after startup
+    }, 10000); // Wait 10 seconds after startup
     
-    // Schedule daily at 8:00 AM
-    cron.schedule('0 8 * * *', checkDeadlines, {
+    // Schedule daily at 9:00 AM (changed from 8:00 to be safe)
+    cron.schedule('0 9 * * *', checkDeadlines, {
       timezone: 'Asia/Kolkata'
     });
     
-    console.log('⏰ Deadline reminder job scheduled (daily at 8:00 AM)');
-    console.log('⏰ Also running once on startup for testing');
+    console.log('⏰ Deadline reminder job scheduled (daily at 9:00 AM IST)');
+    console.log('⏰ Also running once on startup after 10 seconds');
   }
 };

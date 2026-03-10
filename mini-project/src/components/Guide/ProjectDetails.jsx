@@ -113,6 +113,17 @@ const ProjectDetails = ({
     return Math.round((completed / localTasks.length) * 100);
   };
 
+  // Format date for display - CLEAN VERSION (no warnings)
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
   // Function to group tasks by title
   const groupTasksByTitle = () => {
     const groupedMap = new Map();
@@ -124,7 +135,8 @@ const ProjectDetails = ({
           title: taskTitle,
           assignees: [],
           tasks: [],
-          status: task.status
+          status: task.status,
+          dueDate: task.dueDate // Store the due date
         });
       }
       const group = groupedMap.get(taskTitle);
@@ -133,6 +145,7 @@ const ProjectDetails = ({
       
       if (group.tasks.length > 0) {
         group.status = group.tasks[0].status;
+        group.dueDate = group.tasks[0].dueDate; // Use first task's due date
       }
     });
     
@@ -145,16 +158,31 @@ const ProjectDetails = ({
   const handleGroupedTaskStatusChange = async (group, newStatus) => {
     try {
       setLoading(true);
+      console.log('📝 Changing task status:', { groupTitle: group.title, newStatus });
       
+      // Update all tasks in this group to the new status
       const updatePromises = group.tasks.map(task => 
         onUpdateTaskStatus(task._id, newStatus)
       );
       
-      await Promise.all(updatePromises);
+      const results = await Promise.all(updatePromises);
+      console.log('✅ Status update results:', results);
+      
+      // Update local state immediately for better UX
+      const updatedTasks = localTasks.map(task => {
+        if (group.tasks.some(t => t._id === task._id)) {
+          return { ...task, status: newStatus };
+        }
+        return task;
+      });
+      
+      setLocalTasks(updatedTasks);
+      
+      // Refresh data from server to ensure consistency
       await refreshProjectData();
       
     } catch (error) {
-      console.error('Error updating task status:', error);
+      console.error('❌ Error updating task status:', error);
     } finally {
       setLoading(false);
     }
@@ -332,7 +360,7 @@ const ProjectDetails = ({
           )}
         </div>
 
-        {/* Tasks Section */}
+        {/* Tasks Section - CLEAN DEADLINE DISPLAY */}
         <div className="details-card">
           <h2 className="card-title">
             <i className="fas fa-tasks"></i>
@@ -341,30 +369,42 @@ const ProjectDetails = ({
           
           {groupedTasks.length > 0 ? (
             <div className="tasks-list-detailed">
-              {groupedTasks.map((group, groupIdx) => (
-                <div key={groupIdx} className={`task-group ${group.status}`}>
-                  <div className="task-group-header">
-                    <div className="task-title-container">
-                      <h3 className="task-group-title">{group.title}</h3>
-                      <select 
-                        value={group.status}
-                        onChange={(e) => handleGroupedTaskStatusChange(group, e.target.value)}
-                        className={`status-badge ${group.status}`}
-                        disabled={loading}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="in-progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                      </select>
+              {groupedTasks.map((group, groupIdx) => {
+                const formattedDate = formatDate(group.dueDate);
+                
+                return (
+                  <div key={groupIdx} className={`task-group ${group.status}`}>
+                    <div className="task-group-header">
+                      <div className="task-title-container">
+                        <h3 className="task-group-title">{group.title}</h3>
+                        <select 
+                          value={group.status}
+                          onChange={(e) => handleGroupedTaskStatusChange(group, e.target.value)}
+                          className={`status-badge ${group.status}`}
+                          disabled={loading}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="in-progress">In Progress</option>
+                          <option value="completed">Completed</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    {/* Clean Deadline Display - Only shown if date exists */}
+                    {formattedDate && (
+                      <div className="task-deadline">
+                        <i className="fas fa-calendar-alt"></i>
+                        <span>Due: {formattedDate}</span>
+                      </div>
+                    )}
+                    
+                    <div className="task-assignees">
+                      <i className="fas fa-users"></i>
+                      <span>{group.assignees.join(', ')}</span>
                     </div>
                   </div>
-                  
-                  <div className="task-assignees">
-                    <i className="fas fa-users"></i>
-                    <span>{group.assignees.join(', ')}</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="empty-state">No tasks yet. Click "Allocate Task" to add tasks.</p>

@@ -664,3 +664,113 @@
   color: #ffb347;
   transform: translateY(-4px);
 }
+/* All Tasks Preview Section */
+.all-tasks-preview {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.all-tasks-preview h3 {
+  color: white;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.all-tasks-preview h3 i {
+  color: #4cc9f0;
+}
+
+.preview-task-item {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid;
+  transition: all 0.2s ease;
+}
+
+.preview-task-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(5px);
+}
+
+.preview-task-item.pending {
+  border-left-color: #ff6b6b;
+}
+
+.preview-task-item.in-progress {
+  border-left-color: #4cc9f0;
+}
+
+.preview-task-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.task-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.task-status-dot.pending {
+  background: #ff6b6b;
+  box-shadow: 0 0 5px #ff6b6b;
+}
+
+.task-status-dot.in-progress {
+  background: #4cc9f0;
+  box-shadow: 0 0 5px #4cc9f0;
+}
+
+.preview-task-title {
+  color: white;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.preview-task-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-left: 1.3rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+.preview-project-name i,
+.preview-task-due i {
+  margin-right: 0.25rem;
+  color: #4cc9f0;
+}
+
+.empty-tasks {
+  text-align: center;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.empty-tasks i {
+  font-size: 2rem;
+  color: #4ade80;
+  margin-bottom: 0.5rem;
+}
+
+.more-tasks-indicator {
+  text-align: center;
+  padding: 0.5rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  margin-top: 0.5rem;
+}

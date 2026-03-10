@@ -110,11 +110,28 @@ const updateTaskStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     
-    console.log('📝 Updating task:', id, 'to status:', status);
+    console.log('📝 Backend: Updating task:', id, 'to status:', status);
+    
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status is required'
+      });
+    }
+    
+    // Validate status value
+    const validStatuses = ['pending', 'in-progress', 'completed'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status value'
+      });
+    }
     
     const task = await Task.findById(id);
     
     if (!task) {
+      console.log('❌ Task not found:', id);
       return res.status(404).json({
         success: false,
         message: 'Task not found'
@@ -124,12 +141,13 @@ const updateTaskStatus = async (req, res) => {
     task.status = status;
     await task.save();
     
-    console.log('✅ Task updated:', task._id);
+    console.log('✅ Task updated successfully:', task._id);
     
     res.json({
       success: true,
       task
     });
+    
   } catch (error) {
     console.error('❌ Error updating task:', error);
     res.status(500).json({

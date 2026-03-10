@@ -215,96 +215,117 @@ const GuideDashboard = () => {
     }
   };
 
+  // Handle Allocate Task
   const handleAllocateTask = async (taskData) => {
+    if (!selectedProject) {
+      console.log('❌ No selected project');
+      return;
+    }
+    
+    console.log('📤 handleAllocateTask called with:', taskData);
+    console.log('📤 Selected project ID:', selectedProject._id);
+    
+    try {
+      setLoading(true);
+      
+      if (Array.isArray(taskData)) {
+        console.log('📤 Creating multiple tasks:', taskData);
+        
+        const taskPromises = taskData.map(task => {
+          console.log('📤 Sending task to API:', {
+            title: task.title,
+            assignedTo: task.assignedTo,
+            projectId: selectedProject._id,
+            dueDate: task.dueDate
+          });
+          
+          return API.post('/tasks', {
+            title: task.title,
+            assignedTo: task.assignedTo,
+            projectId: selectedProject._id,
+            status: task.status || 'pending',
+            dueDate: task.dueDate
+          });
+        });
+        
+        const responses = await Promise.all(taskPromises);
+        console.log('✅ Multiple tasks created:', responses);
+        
+      } else {
+        console.log('📤 Creating single task:', taskData);
+        
+        const response = await API.post('/tasks', {
+          title: taskData.title,
+          assignedTo: taskData.assignedTo,
+          projectId: selectedProject._id,
+          status: taskData.status || 'pending',
+          dueDate: taskData.dueDate
+        });
+        
+        console.log('✅ Task created response:', response.data);
+      }
+      
+      // Refresh project data
+      const updatedProject = await API.get(`/projects/${selectedProject._id}`);
+      setSelectedProject(updatedProject.data.project);
+      
+      // Reset form
+      setNewTask({ title: '', assignedTo: '', dueDate: '' });
+      setAssignToAll(false);
+      setShowAllocateTask(false);
+      
+    } catch (error) {
+      console.error('❌ Failed to allocate task:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      // NO POPUP - just log the error
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update Task Status - WITH MORE DEBUG LOGS
+const updateTaskStatus = async (taskId, newStatus) => {
   if (!selectedProject) {
     console.log('❌ No selected project');
     return;
   }
   
-  console.log('📤 handleAllocateTask called with:', taskData);
-  console.log('📤 Selected project ID:', selectedProject._id);
-  
   try {
-    setLoading(true);
+    console.log('📤 Frontend: Updating task status:', { 
+      taskId, 
+      newStatus,
+      url: `/tasks/${taskId}/status`
+    });
     
-    if (Array.isArray(taskData)) {
-      console.log('📤 Creating multiple tasks:', taskData);
-      
-      const taskPromises = taskData.map(task => {
-        console.log('📤 Sending task to API:', {
-          title: task.title,
-          assignedTo: task.assignedTo,
-          projectId: selectedProject._id,
-          dueDate: task.dueDate
-        });
-        
-        return API.post('/tasks', {
-          title: task.title,
-          assignedTo: task.assignedTo,
-          projectId: selectedProject._id,
-          status: task.status || 'pending',
-          dueDate: task.dueDate
-        });
-      });
-      
-      const responses = await Promise.all(taskPromises);
-      console.log('✅ Multiple tasks created:', responses);
-      
-    } else {
-      console.log('📤 Creating single task:', taskData);
-      
-      const response = await API.post('/tasks', {
-        title: taskData.title,
-        assignedTo: taskData.assignedTo,
-        projectId: selectedProject._id,
-        status: taskData.status || 'pending',
-        dueDate: taskData.dueDate
-      });
-      
-      console.log('✅ Task created response:', response.data);
-    }
+    const response = await API.put(`/tasks/${taskId}/status`, {
+      status: newStatus
+    });
     
-    // Refresh project data
-    const updatedProject = await API.get(`/projects/${selectedProject._id}`);
-    setSelectedProject(updatedProject.data.project);
+    console.log('✅ Frontend: Task status updated successfully:', response.data);
     
-    // Reset form
-    setNewTask({ title: '', assignedTo: '', dueDate: '' });
-    setAssignToAll(false);
-    setShowAllocateTask(false);
+    // Update the selected project tasks
+    const updatedTasks = selectedProject.tasks.map(t => 
+      t._id === taskId ? { ...t, status: newStatus } : t
+    );
+    
+    setSelectedProject({
+      ...selectedProject,
+      tasks: updatedTasks
+    });
+    
+    return response.data;
     
   } catch (error) {
-    console.error('❌ Failed to allocate task:', error);
-    console.error('❌ Error response:', error.response?.data);
-    console.error('❌ Error status:', error.response?.status);
-    // Show alert so you know it failed
-    alert(error.response?.data?.message || 'Failed to allocate task');
-  } finally {
-    setLoading(false);
+    console.error('❌ Frontend: Failed to update task status:');
+    console.error('Error:', error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
+    console.error('Error config:', error.config);
+    // NO POPUP - just log
+    throw error;
   }
 };
-  // Update Task Status
-  const updateTaskStatus = async (taskId, newStatus) => {
-    if (!selectedProject) return;
-    
-    try {
-      await API.put(`/tasks/${taskId}/status`, {
-        status: newStatus
-      });
-      
-      const updatedTasks = selectedProject.tasks.map(t => 
-        t._id === taskId ? { ...t, status: newStatus } : t
-      );
-      
-      setSelectedProject({
-        ...selectedProject,
-        tasks: updatedTasks
-      });
-      
-    } catch (error) {
-      console.error('❌ Failed to update task status:', error);
-    }
-  };
 
   // Handle Add Discussion
   const handleAddDiscussion = async () => {

@@ -51,8 +51,10 @@ app.get('/', (req, res) => {
 // Test route for manual reminder trigger
 app.post('/api/test/check-deadlines', async (req, res) => {
   try {
-    console.log('🧪 Manually checking deadlines...');
+    console.log('🧪 Manually checking deadlines...'); // THIS SHOULD APPEAR
+    console.log('📋 Calling checkDeadlines function...');
     await checkDeadlines();
+    console.log('✅ Deadline check completed');
     res.json({ success: true, message: 'Deadline check completed' });
   } catch (error) {
     console.error('❌ Error:', error);
