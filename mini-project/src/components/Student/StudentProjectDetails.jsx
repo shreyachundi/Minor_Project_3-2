@@ -17,7 +17,7 @@ const StudentProjectDetails = ({
   handleAddDiscussion,
   handleAddReply,
   onCloseModals,
-  unreadCount = 0  // Add this new prop
+  unreadCount = 0
 }) => {
   const [localProject, setLocalProject] = useState(project);
   const [localTasks, setLocalTasks] = useState([]);
@@ -30,7 +30,12 @@ const StudentProjectDetails = ({
     console.log('📥 Project data received:', project);
     setLocalProject(project);
     setLocalTasks(project?.tasks || []);
-    setLocalDiscussions(project?.discussions || []);
+    
+    // Sort discussions by date (oldest first for proper chat flow)
+    const sortedDiscussions = (project?.discussions || []).sort(
+      (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+    );
+    setLocalDiscussions(sortedDiscussions);
   }, [project]);
 
   // Refresh project data function
@@ -46,9 +51,12 @@ const StudentProjectDetails = ({
       
       if (response.data.success) {
         const refreshedProject = response.data.project;
+        const sortedDiscussions = (refreshedProject.discussions || []).sort(
+          (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+        );
         setLocalProject(refreshedProject);
         setLocalTasks(refreshedProject.tasks || []);
-        setLocalDiscussions(refreshedProject.discussions || []);
+        setLocalDiscussions(sortedDiscussions);
       }
     } catch (error) {
       console.error('❌ Error refreshing project data:', error);
@@ -97,6 +105,34 @@ const StudentProjectDetails = ({
   const otherTasks = getOtherTasks();
   const myGroupedTasks = groupTasksByTitle(myTasks);
   const otherGroupedTasks = groupTasksByTitle(otherTasks);
+
+  // Handle adding discussion - FIXED to prevent modal closing
+  const handleDiscussionSubmit = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!newDiscussion?.message?.trim()) return;
+    
+    try {
+      await handleAddDiscussion();
+      setNewDiscussion?.({...newDiscussion, message: ''});
+      setTimeout(() => {
+        refreshProjectData();
+      }, 500);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  };
+
+  // Get recent discussions for preview (last 3 messages)
+  const getRecentDiscussions = () => {
+    if (localDiscussions.length === 0) return [];
+    return localDiscussions.slice(-3);
+  };
+
+  const recentDiscussions = getRecentDiscussions();
 
   return (
     <div className="student-project-details">
@@ -237,93 +273,280 @@ const StudentProjectDetails = ({
         </div>
       </div>
 
-      {/* Discussion Forum Modal */}
+      {/* Recent Discussions Section */}
+      {recentDiscussions.length > 0 && (
+        <div className="discussions-preview-section">
+          <h2 className="card-title">
+            <i className="fas fa-comments"></i>
+            Recent Discussions
+          </h2>
+          <div className="preview-messages">
+            {recentDiscussions.map((disc, idx) => (
+              <div key={disc?.id || disc?._id || idx} className="preview-message">
+                <span className="preview-author">{disc?.student || disc?.author || 'Unknown'}:</span>
+                <span className="preview-text">{(disc?.message || '').substring(0, 40)}</span>
+                <span className="preview-time">
+                  {disc?.createdAt ? new Date(disc.createdAt).toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true 
+                  }) : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Discussion Forum Modal - WhatsApp Style */}
       {showDiscussion && (
         <div className="modal" onClick={onCloseModals}>
-          <div className="modal-content discussion-modal" onClick={e => e.stopPropagation()}>
-            <div className="discussion-header">
-              <h3><i className="fas fa-comments"></i> Discussion Forum</h3>
-              <button className="close-discussion-btn" onClick={onCloseModals}>
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
+          <div className="modal-content whatsapp-modal" onClick={(e) => {
+            e.stopPropagation();
+          }}>
             
-            <div className="discussion-container">
-              <div className="messages-list">
-                {localDiscussions?.map(disc => (
-                  <div key={disc._id} className="message-thread">
-                    <div className="message-main">
-                      <div className="message-header">
-                        <div className="message-author-info">
-                          <i className="fas fa-user-circle"></i>
-                          <span className={`message-author ${disc.author.includes('Guide') ? 'guide' : ''}`}>
-                            {disc.author}
-                          </span>
-                        </div>
-                        <span className="message-time">{new Date(disc.createdAt).toLocaleString()}</span>
-                      </div>
-                      <p className="message-content">{disc.message}</p>
-                      <button 
-                        className="reply-btn"
-                        onClick={() => setReplyTo(replyTo === disc._id ? null : disc._id)}
-                      >
-                        <i className="fas fa-reply"></i>
-                        Reply
-                      </button>
-                    </div>
-
-                    {disc.replies?.map(reply => (
-                      <div key={reply._id} className="message-reply">
-                        <div className="message-header">
-                          <div className="message-author-info">
-                            <i className="fas fa-user-circle"></i>
-                            <span className={`message-author ${reply.author.includes('Guide') ? 'guide' : ''}`}>
-                              {reply.author}
-                            </span>
-                          </div>
-                          <span className="message-time">{new Date(reply.createdAt).toLocaleString()}</span>
-                        </div>
-                        <p className="message-content">{reply.message}</p>
-                      </div>
-                    ))}
-
-                    {replyTo === disc._id && (
-                      <div className="reply-input-container">
-                        <input
-                          type="text"
-                          placeholder="Write your reply..."
-                          value={replyMessage}
-                          onChange={(e) => setReplyMessage(e.target.value)}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              handleAddReply(disc._id);
-                            }
-                          }}
-                        />
-                        <button onClick={() => handleAddReply(disc._id)}>
-                          <i className="fas fa-paper-plane"></i>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+            {/* WhatsApp-style Header */}
+            <div className="whatsapp-header">
+              <div className="whatsapp-header-left">
+                <button className="whatsapp-back-btn" onClick={(e) => {
+                  e.stopPropagation();
+                  onCloseModals();
+                }}>
+                  <i className="fas fa-arrow-left"></i>
+                </button>
+                <div className="whatsapp-chat-info">
+                  <h3>{localProject?.name || 'Project'} Discussion</h3>
+                  <span className="whatsapp-participants">
+                    <i className="fas fa-users"></i> {localProject?.students?.length || 0} participants
+                  </span>
+                </div>
               </div>
-
-              <div className="new-message">
-                <textarea
-                  placeholder="Start a new discussion..."
-                  value={newDiscussion.message}
-                  onChange={(e) => setNewDiscussion({...newDiscussion, message: e.target.value})}
-                  rows="3"
-                />
-                <button 
-                  className="post-message-btn"
-                  onClick={handleAddDiscussion}
-                >
-                  <i className="fas fa-paper-plane"></i>
-                  Post Message
+              <div className="whatsapp-header-right">
+                <button className="whatsapp-header-btn" onClick={(e) => {
+                  e.stopPropagation();
+                  refreshProjectData();
+                }} title="Refresh">
+                  <i className={`fas fa-sync-alt ${refreshing ? 'fa-spin' : ''}`}></i>
+                </button>
+                <button className="whatsapp-header-btn" onClick={(e) => {
+                  e.stopPropagation();
+                  onCloseModals();
+                }} title="Close">
+                  <i className="fas fa-times"></i>
                 </button>
               </div>
+            </div>
+
+            {/* WhatsApp Chat Area */}
+            <div className="whatsapp-chat-area" id="whatsapp-chat-area" onClick={(e) => e.stopPropagation()}>
+              <div className="whatsapp-date-divider">
+                <span>Today</span>
+              </div>
+
+              <div className="whatsapp-messages-container">
+                {localDiscussions.length === 0 ? (
+                  <div className="whatsapp-empty-state">
+                    <div className="empty-state-icon">
+                      <i className="fas fa-comments"></i>
+                    </div>
+                    <h4>No messages yet</h4>
+                    <p>Start the conversation with your team</p>
+                  </div>
+                ) : (
+                  localDiscussions.map((disc, idx) => {
+                    const messageAuthor = disc?.student || disc?.author || 'Unknown';
+                    const messageTime = disc?.createdAt || disc?.timestamp || '';
+                    
+                    const formattedTime = messageTime ? new Date(messageTime).toLocaleTimeString([], { 
+                      hour: '2-digit', 
+                      minute: '2-digit',
+                      hour12: true 
+                    }) : '';
+                    
+                    // Check if message is from current user
+                    const isCurrentUser = messageAuthor.toLowerCase() === student?.name?.toLowerCase();
+                    // Check if message is from guide
+                    const isGuide = messageAuthor === 'Guide' || messageAuthor === localProject?.guide;
+                    
+                    return (
+                      <div key={disc?._id || disc?.id || idx} className="message-container">
+                        {/* Main Message */}
+                        <div className={`message-row ${isCurrentUser ? 'my-message' : isGuide ? 'guide-message' : 'other-message'}`}>
+                          <div className="message-bubble-wrapper">
+                            {/* Sender Name with Time */}
+                            <div className="message-sender">
+                              {isGuide ? (
+                                <span className="guide-name">
+                                  <i className="fas fa-chalkboard-teacher"></i> Guide
+                                </span>
+                              ) : isCurrentUser ? (
+                                <span className="my-name">
+                                  <i className="fas fa-user"></i> You
+                                </span>
+                              ) : (
+                                <span className="other-name">
+                                  <i className="fas fa-user-graduate"></i> {messageAuthor}
+                                </span>
+                              )}
+                              <span className="message-time">{formattedTime}</span>
+                            </div>
+                            
+                            {/* Message Bubble */}
+                            <div className={`message-bubble ${isCurrentUser ? 'my-bubble' : isGuide ? 'guide-bubble' : 'other-bubble'}`}>
+                              <div className="message-text">
+                                {disc?.message || ''}
+                              </div>
+                            </div>
+
+                            {/* Reply Button */}
+                            <button 
+                              className="message-reply-btn"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setReplyTo?.(replyTo === (disc?._id || disc?.id) ? null : (disc?._id || disc?.id));
+                              }}
+                            >
+                              <i className="fas fa-reply"></i> Reply
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Replies Section */}
+                        {disc?.replies && disc.replies.length > 0 && (
+                          <div className="replies-section">
+                            {disc.replies.map((reply, replyIdx) => {
+                              const replyAuthor = reply?.student || reply?.author || 'Unknown';
+                              const replyTime = reply?.createdAt || reply?.timestamp || '';
+                              const formattedReplyTime = replyTime ? new Date(replyTime).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit',
+                                hour12: true 
+                              }) : '';
+                              const isReplyCurrentUser = replyAuthor.toLowerCase() === student?.name?.toLowerCase();
+                              const isReplyGuide = replyAuthor === 'Guide' || replyAuthor === localProject?.guide;
+
+                              return (
+                                <div key={replyIdx} className={`reply-row ${isReplyCurrentUser ? 'my-reply' : isReplyGuide ? 'guide-reply' : 'other-reply'}`}>
+                                  <div className="reply-bubble-wrapper">
+                                    <div className="reply-sender">
+                                      {isReplyGuide ? (
+                                        <span className="guide-name">
+                                          <i className="fas fa-chalkboard-teacher"></i> Guide
+                                        </span>
+                                      ) : isReplyCurrentUser ? (
+                                        <span className="my-name">
+                                          <i className="fas fa-user"></i> You
+                                        </span>
+                                      ) : (
+                                        <span className="other-name">
+                                          <i className="fas fa-user-graduate"></i> {replyAuthor}
+                                        </span>
+                                      )}
+                                      <span className="reply-time">{formattedReplyTime}</span>
+                                    </div>
+                                    <div className={`reply-bubble ${isReplyCurrentUser ? 'my-bubble' : isReplyGuide ? 'guide-bubble' : 'other-bubble'}`}>
+                                      {reply?.message || ''}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Reply Input Field */}
+                        {replyTo === (disc?._id || disc?.id) && (
+                          <div className="reply-input-container" onClick={(e) => e.stopPropagation()}>
+                            <div className="reply-preview">
+                              <i className="fas fa-reply"></i>
+                              <span>Replying to {messageAuthor}</span>
+                              <button 
+                                className="cancel-reply"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setReplyTo?.(null);
+                                }}
+                              >
+                                <i className="fas fa-times"></i>
+                              </button>
+                            </div>
+                            <div className="reply-input-wrapper">
+                              <textarea
+                                placeholder="Write your reply..."
+                                value={replyMessage || ''}
+                                onChange={(e) => setReplyMessage?.(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleAddReply?.(disc?._id || disc?.id);
+                                  }
+                                }}
+                                rows="1"
+                              />
+                              <button 
+                                className="send-reply-btn"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleAddReply?.(disc?._id || disc?.id);
+                                }}
+                                disabled={!replyMessage?.trim()}
+                              >
+                                <i className="fas fa-paper-plane"></i>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* WhatsApp Input Area - FIXED: Won't close modal */}
+            <div className="whatsapp-input-area" onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}>
+              <div className="input-wrapper" onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}>
+                <textarea
+                  placeholder="Type a message..."
+                  value={newDiscussion?.message || ''}
+                  onChange={(e) => setNewDiscussion?.({...newDiscussion, message: e.target.value})}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDiscussionSubmit(e);
+                    }
+                  }}
+                  rows="1"
+                />
+              </div>
+              <button 
+                className="send-btn"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDiscussionSubmit(e);
+                }}
+                disabled={!newDiscussion?.message?.trim()}
+                type="button"
+              >
+                <i className="fas fa-paper-plane"></i>
+              </button>
             </div>
           </div>
         </div>
