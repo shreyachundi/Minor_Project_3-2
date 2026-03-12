@@ -203,36 +203,67 @@ const StudentDashboard = () => {
     }
   };
 
-  const handleAddDiscussion = async () => {
+  // Handle Add Discussion - FIXED to keep modal open
+  const handleAddDiscussion = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (!newDiscussion.message || !selectedProject) return;
     
+    // Store current message to clear later
+    const currentMessage = newDiscussion.message;
+    
     try {
-      const response = await API.post('/discussions', {
-        message: newDiscussion.message,
-        projectId: selectedProject._id
+      await API.post('/discussions', {
+        message: currentMessage,
+        projectId: selectedProject._id,
+        author: student.name
       });
       
-      const updatedProject = await API.get(`/projects/${selectedProject._id}`);
-      setSelectedProject(updatedProject.data.project);
+      // Fetch updated project data
+      const response = await API.get(`/projects/${selectedProject._id}`);
+      const updatedProject = response.data.project;
       
+      // Update the selected project WITHOUT closing the modal
+      setSelectedProject({
+        ...selectedProject,
+        ...updatedProject,
+        discussions: updatedProject.discussions || []
+      });
+      
+      // Clear the message but KEEP THE MODAL OPEN
       setNewDiscussion({ message: '', author: student.name });
-      setShowDiscussion(false);
       
     } catch (error) {
       console.error('❌ Failed to create discussion:', error);
     }
   };
 
+  // Handle Add Reply - FIXED to keep modal open
   const handleAddReply = async (discussionId) => {
     if (!replyMessage || !selectedProject) return;
     
+    // Store current reply to clear later
+    const currentReply = replyMessage;
+    
     try {
-      const response = await API.post(`/discussions/${discussionId}/replies`, {
-        message: replyMessage
+      await API.post(`/discussions/${discussionId}/replies`, {
+        message: currentReply,
+        author: student.name
       });
       
-      const updatedProject = await API.get(`/projects/${selectedProject._id}`);
-      setSelectedProject(updatedProject.data.project);
+      // Fetch updated project data
+      const response = await API.get(`/projects/${selectedProject._id}`);
+      const updatedProject = response.data.project;
+      
+      // Update the selected project WITHOUT closing the modal
+      setSelectedProject({
+        ...selectedProject,
+        ...updatedProject,
+        discussions: updatedProject.discussions || []
+      });
       
       setReplyMessage('');
       setReplyTo(null);
@@ -264,6 +295,7 @@ const StudentDashboard = () => {
   if (selectedProject) {
     return (
       <StudentProjectDetails
+        key={selectedProject._id} // Add key to force re-render only when project changes
         project={selectedProject}
         student={student}
         onBack={() => setSelectedProject(null)}
@@ -274,12 +306,13 @@ const StudentDashboard = () => {
         replyTo={replyTo}
         setReplyTo={setReplyTo}
         replyMessage={replyMessage}
-        setReplyMessage={replyMessage}
+        setReplyMessage={setReplyMessage}
         handleAddDiscussion={handleAddDiscussion}
         handleAddReply={handleAddReply}
         onCloseModals={() => {
           setShowDiscussion(false);
           setReplyTo(null);
+          setReplyMessage('');
         }}
       />
     );
@@ -358,7 +391,7 @@ const StudentDashboard = () => {
             <h3><i className="fas fa-tasks"></i> Your Tasks (All Projects)</h3>
             {pendingTasks.length > 0 ? (
               <div className="preview-tasks-list">
-                {pendingTasks.map(task => (
+                {pendingTasks.slice(0, 5).map(task => (
                   <div key={task._id} className="preview-task-item">
                     <div className="preview-task-header">
                       <span className={`task-status-dot ${task.status}`}></span>

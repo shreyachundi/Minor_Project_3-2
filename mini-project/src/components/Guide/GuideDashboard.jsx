@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate} from 'react-router-dom';
 import API from '../../services/api';
 import ProjectDetails from './ProjectDetails';
@@ -222,23 +222,11 @@ const GuideDashboard = () => {
       return;
     }
     
-    console.log('📤 handleAllocateTask called with:', taskData);
-    console.log('📤 Selected project ID:', selectedProject._id);
-    
     try {
       setLoading(true);
       
       if (Array.isArray(taskData)) {
-        console.log('📤 Creating multiple tasks:', taskData);
-        
         const taskPromises = taskData.map(task => {
-          console.log('📤 Sending task to API:', {
-            title: task.title,
-            assignedTo: task.assignedTo,
-            projectId: selectedProject._id,
-            dueDate: task.dueDate
-          });
-          
           return API.post('/tasks', {
             title: task.title,
             assignedTo: task.assignedTo,
@@ -248,21 +236,16 @@ const GuideDashboard = () => {
           });
         });
         
-        const responses = await Promise.all(taskPromises);
-        console.log('✅ Multiple tasks created:', responses);
+        await Promise.all(taskPromises);
         
       } else {
-        console.log('📤 Creating single task:', taskData);
-        
-        const response = await API.post('/tasks', {
+        await API.post('/tasks', {
           title: taskData.title,
           assignedTo: taskData.assignedTo,
           projectId: selectedProject._id,
           status: taskData.status || 'pending',
           dueDate: taskData.dueDate
         });
-        
-        console.log('✅ Task created response:', response.data);
       }
       
       // Refresh project data
@@ -276,99 +259,104 @@ const GuideDashboard = () => {
       
     } catch (error) {
       console.error('❌ Failed to allocate task:', error);
-      console.error('❌ Error response:', error.response?.data);
-      console.error('❌ Error status:', error.response?.status);
-      // NO POPUP - just log the error
     } finally {
       setLoading(false);
     }
   };
 
-  // Update Task Status - WITH MORE DEBUG LOGS
-const updateTaskStatus = async (taskId, newStatus) => {
-  if (!selectedProject) {
-    console.log('❌ No selected project');
-    return;
-  }
-  
-  try {
-    console.log('📤 Frontend: Updating task status:', { 
-      taskId, 
-      newStatus,
-      url: `/tasks/${taskId}/status`
-    });
-    
-    const response = await API.put(`/tasks/${taskId}/status`, {
-      status: newStatus
-    });
-    
-    console.log('✅ Frontend: Task status updated successfully:', response.data);
-    
-    // Update the selected project tasks
-    const updatedTasks = selectedProject.tasks.map(t => 
-      t._id === taskId ? { ...t, status: newStatus } : t
-    );
-    
-    setSelectedProject({
-      ...selectedProject,
-      tasks: updatedTasks
-    });
-    
-    return response.data;
-    
-  } catch (error) {
-    console.error('❌ Frontend: Failed to update task status:');
-    console.error('Error:', error);
-    console.error('Error response:', error.response?.data);
-    console.error('Error status:', error.response?.status);
-    console.error('Error config:', error.config);
-    // NO POPUP - just log
-    throw error;
-  }
-};
-
-  // Handle Add Discussion
-  const handleAddDiscussion = async () => {
-    if (!newDiscussion.message || !selectedProject) {
+  // Update Task Status
+  const updateTaskStatus = async (taskId, newStatus) => {
+    if (!selectedProject) {
       return;
     }
     
     try {
-      setLoading(true);
-      
-      await API.post('/discussions', {
-        author: `Guide ${user?.name}`,
-        message: newDiscussion.message,
-        projectId: selectedProject._id
+      const response = await API.put(`/tasks/${taskId}/status`, {
+        status: newStatus
       });
       
-      const updatedProject = await API.get(`/projects/${selectedProject._id}`);
-      setSelectedProject(updatedProject.data.project);
+      // Update the selected project tasks
+      const updatedTasks = selectedProject.tasks.map(t => 
+        t._id === taskId ? { ...t, status: newStatus } : t
+      );
       
-      setNewDiscussion({ message: '', author: `Guide ${user?.name}` });
-      setShowDiscussion(false);
+      setSelectedProject({
+        ...selectedProject,
+        tasks: updatedTasks
+      });
+      
+      return response.data;
       
     } catch (error) {
-      console.error('❌ Failed to create discussion:', error);
-    } finally {
-      setLoading(false);
+      console.error('❌ Failed to update task status:', error);
+      throw error;
     }
   };
 
-  // Handle Add Reply
+  // Handle Add Discussion - FIXED to keep modal open
+  const handleAddDiscussion = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!newDiscussion.message || !selectedProject) {
+      return;
+    }
+    
+    // Store current message to clear later
+    const currentMessage = newDiscussion.message;
+    
+    try {
+      await API.post('/discussions', {
+        author: `Guide ${user?.name}`,
+        message: currentMessage,
+        projectId: selectedProject._id
+      });
+      
+      // Fetch updated project data
+      const response = await API.get(`/projects/${selectedProject._id}`);
+      const updatedProject = response.data.project;
+      
+      // Update the selected project WITHOUT changing modal state
+      setSelectedProject({
+        ...selectedProject,
+        ...updatedProject,
+        discussions: updatedProject.discussions || []
+      });
+      
+      // Clear the message but KEEP THE MODAL OPEN
+      setNewDiscussion({ message: '', author: `Guide ${user?.name}` });
+      
+    } catch (error) {
+      console.error('❌ Failed to create discussion:', error);
+    }
+  };
+
+  // Handle Add Reply - FIXED to keep modal open
   const handleAddReply = async (discussionId) => {
     if (!replyMessage || !selectedProject) {
       return;
     }
     
+    const currentReply = replyMessage;
+    
     try {
       await API.post(`/discussions/${discussionId}/replies`, {
         author: `Guide ${user?.name}`,
-        message: replyMessage
+        message: currentReply
       });
       
-      const updatedProject = await API.get(`/projects/${selectedProject._id}`);
-      setSelectedProject(updatedProject.data.project);
+      // Fetch updated project data
+      const response = await API.get(`/projects/${selectedProject._id}`);
+      const updatedProject = response.data.project;
+      
+      // Update the selected project WITHOUT changing modal state
+      setSelectedProject({
+        ...selectedProject,
+        ...updatedProject,
+        discussions: updatedProject.discussions || []
+      });
       
       setReplyMessage('');
       setReplyTo(null);
@@ -401,9 +389,16 @@ const updateTaskStatus = async (taskId, newStatus) => {
   if (selectedProject) {
     return (
       <ProjectDetails
+        key={selectedProject._id} // Add key to force re-render only when project changes
         project={selectedProject}
         onBack={() => setSelectedProject(null)}
-        onProjectUpdate={(updatedProject) => setSelectedProject(updatedProject)}
+        onProjectUpdate={(updatedProject) => {
+          // Update project without affecting modal state
+          setSelectedProject(prev => ({
+            ...prev,
+            ...updatedProject
+          }));
+        }}
         onAddStudent={() => setShowAddStudent(true)}
         onAllocateTask={() => setShowAllocateTask(true)}
         onOpenDiscussion={() => handleOpenDiscussion(selectedProject._id)}

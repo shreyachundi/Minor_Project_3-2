@@ -115,9 +115,15 @@ const StudentProjectDetails = ({
     
     if (!newDiscussion?.message?.trim()) return;
     
+    // Store current message to clear later
+    const currentMessage = newDiscussion.message;
+    
     try {
       await handleAddDiscussion();
+      // Clear the message but KEEP THE MODAL OPEN
       setNewDiscussion?.({...newDiscussion, message: ''});
+      
+      // Refresh data without closing modal
       setTimeout(() => {
         refreshProjectData();
       }, 500);
@@ -309,6 +315,7 @@ const StudentProjectDetails = ({
             <div className="whatsapp-header">
               <div className="whatsapp-header-left">
                 <button className="whatsapp-back-btn" onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   onCloseModals();
                 }}>
@@ -323,12 +330,14 @@ const StudentProjectDetails = ({
               </div>
               <div className="whatsapp-header-right">
                 <button className="whatsapp-header-btn" onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   refreshProjectData();
                 }} title="Refresh">
                   <i className={`fas fa-sync-alt ${refreshing ? 'fa-spin' : ''}`}></i>
                 </button>
                 <button className="whatsapp-header-btn" onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   onCloseModals();
                 }} title="Close">
