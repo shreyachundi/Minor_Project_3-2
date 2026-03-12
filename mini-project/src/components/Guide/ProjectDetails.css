@@ -4050,3 +4050,382 @@ div.whatsapp-message-wrapper span.whatsapp-time {
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+/* ========== GUIDE DASHBOARD MESSAGE ALIGNMENT ========== */
+
+/* Outgoing messages (sent by guide) - EXTREME RIGHT */
+.outgoing-message {
+  justify-content: flex-end !important;
+  width: 100%;
+  display: flex !important;
+}
+
+.outgoing-message .message-bubble-wrapper {
+  align-items: flex-end !important;
+  max-width: 65%;
+}
+
+.outgoing-message .message-sender {
+  justify-content: flex-end !important;
+  flex-direction: row-reverse !important;
+}
+
+/* Incoming messages (from students) - EXTREME LEFT */
+.incoming-message {
+  justify-content: flex-start !important;
+  width: 100%;
+  display: flex !important;
+}
+
+.incoming-message .message-bubble-wrapper {
+  align-items: flex-start !important;
+  max-width: 65%;
+}
+
+.incoming-message .message-sender {
+  justify-content: flex-start !important;
+}
+
+/* Message bubbles */
+.outgoing-bubble {
+  background: #005c4b !important;
+  color: white !important;
+  border-top-right-radius: 4px !important;
+  border-top-left-radius: 12px !important;
+  border-bottom-left-radius: 12px !important;
+  border-bottom-right-radius: 4px !important;
+  margin-left: auto !important;
+}
+
+.incoming-bubble {
+  background: #1f2c33 !important;
+  color: white !important;
+  border-top-left-radius: 4px !important;
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+  border-bottom-left-radius: 4px !important;
+  margin-right: auto !important;
+}
+
+/* Sender names */
+.guide-name {
+  color: #feca57 !important;
+  font-weight: 700 !important;
+  font-size: 0.85rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.3rem !important;
+}
+
+.student-name {
+  color: #48dbfb !important;
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.3rem !important;
+}
+
+/* Message time */
+.message-time {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 0.65rem !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  padding: 2px 8px !important;
+  border-radius: 12px !important;
+  display: inline-block !important;
+  margin-left: 0.5rem !important;
+  white-space: nowrap !important;
+}
+
+.outgoing-message .message-time {
+  margin-right: 0.5rem !important;
+  margin-left: 0 !important;
+}
+
+/* Reply button */
+.message-reply-btn {
+  background: transparent;
+  border: none;
+  color: #8696a0;
+  font-size: 0.7rem;
+  cursor: pointer;
+  margin-top: 0.2rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.message-row:hover .message-reply-btn {
+  opacity: 1;
+}
+
+.message-reply-btn:hover {
+  background: rgba(254, 202, 87, 0.1);
+  color: #feca57;
+}
+
+.outgoing-message .message-reply-btn {
+  margin-left: auto !important;
+}
+
+.incoming-message .message-reply-btn {
+  margin-right: auto !important;
+}
+
+/* Replies section */
+.replies-section {
+  margin-left: 2rem;
+  margin-top: 0.5rem;
+  padding-left: 1rem;
+  border-left: 2px solid #feca57;
+}
+
+.reply-row {
+  margin-bottom: 0.5rem;
+  display: flex;
+  width: 100%;
+}
+
+.outgoing-reply {
+  justify-content: flex-end !important;
+}
+
+.incoming-reply {
+  justify-content: flex-start !important;
+}
+
+.reply-bubble-wrapper {
+  max-width: 80%;
+}
+
+.reply-sender {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+  font-size: 0.75rem;
+}
+
+.outgoing-reply .reply-sender {
+  justify-content: flex-end !important;
+  flex-direction: row-reverse !important;
+}
+
+.incoming-reply .reply-sender {
+  justify-content: flex-start !important;
+}
+
+.reply-time {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 0.6rem !important;
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  padding: 2px 6px !important;
+  border-radius: 10px !important;
+}
+
+.reply-bubble {
+  padding: 0.5rem 0.8rem;
+  border-radius: 10px;
+  word-wrap: break-word;
+  font-size: 0.9rem;
+}
+
+.outgoing-reply .reply-bubble {
+  background: #005c4b !important;
+  color: white !important;
+  border-top-right-radius: 4px !important;
+  border-top-left-radius: 12px !important;
+  border-bottom-left-radius: 12px !important;
+  border-bottom-right-radius: 4px !important;
+}
+
+.incoming-reply .reply-bubble {
+  background: #1f2c33 !important;
+  color: white !important;
+  border-top-left-radius: 4px !important;
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+  border-bottom-left-radius: 4px !important;
+}
+
+/* Reply input */
+.reply-input-container {
+  margin: 0.5rem 0 1rem 2rem;
+  background: #1f2c33;
+  border-radius: 12px;
+  padding: 0.5rem;
+  border: 1px solid #feca57;
+}
+
+.reply-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  background: #2a3942;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  color: #feca57;
+  font-size: 0.8rem;
+}
+
+.cancel-reply {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #8696a0;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-reply:hover {
+  background: #ff6b6b;
+  color: white;
+}
+
+.reply-input-wrapper {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.reply-input-wrapper textarea {
+  flex: 1;
+  background: #2a3942;
+  border: 1px solid #feca57;
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  color: white;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+}
+
+.send-reply-btn {
+  background: #feca57;
+  border: none;
+  color: #0f172a;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.send-reply-btn:hover:not(:disabled) {
+  background: #ffb347;
+  transform: scale(1.05);
+}
+
+/* Main input area */
+.whatsapp-input-area {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background: #1f2c33;
+  border-top: 2px solid #feca57;
+}
+
+.input-wrapper {
+  flex: 1;
+  background: #2a3942;
+  border-radius: 30px;
+  padding: 0.2rem 1rem;
+  border: 2px solid transparent;
+}
+
+.input-wrapper:focus-within {
+  border-color: #feca57;
+}
+
+.input-wrapper textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 0.7rem 0;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+}
+
+.send-btn {
+  background: #feca57;
+  border: none;
+  color: #0f172a;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.send-btn:hover:not(:disabled) {
+  background: #ffb347;
+  transform: scale(1.05);
+}
+
+/* Empty state */
+.whatsapp-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #8696a0;
+}
+
+.empty-state-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(254, 202, 87, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  border: 3px dashed #feca57;
+}
+
+.empty-state-icon i {
+  color: #feca57;
+  font-size: 2.5rem;
+}
+
+.whatsapp-empty-state h4 {
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+/* Scrollbar */
+.whatsapp-chat-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.whatsapp-chat-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.whatsapp-chat-area::-webkit-scrollbar-thumb {
+  background: #3d4a53;
+  border-radius: 10px;
+}
+
+.whatsapp-chat-area::-webkit-scrollbar-thumb:hover {
+  background: #feca57;
+}

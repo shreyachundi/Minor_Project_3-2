@@ -575,213 +575,216 @@ const ProjectDetails = ({
       )}
 
       {/* Discussion Modal */}
-      {showDiscussion && (
-        <div className="modal" onClick={onCloseModals}>
-          <div className="modal-content whatsapp-modal" onClick={e => e.stopPropagation()}>
-            
-            {/* WhatsApp-style Header */}
-            <div className="whatsapp-header">
-              <div className="whatsapp-header-left">
-                <button className="whatsapp-back-btn" onClick={onCloseModals}>
-                  <i className="fas fa-arrow-left"></i>
-                </button>
-                <div className="whatsapp-chat-info">
-                  <h3>{project?.name || 'Project'} Discussion</h3>
-                  <span className="whatsapp-participants">
-                    <i className="fas fa-users"></i> {students.length + 1} participants
-                  </span>
-                </div>
-              </div>
-              <div className="whatsapp-header-right">
-                <button className="whatsapp-header-btn" onClick={refreshProjectData} title="Refresh">
-                  <i className={`fas fa-sync-alt ${refreshing ? 'fa-spin' : ''}`}></i>
-                </button>
-                <button className="whatsapp-header-btn" onClick={onCloseModals} title="Close">
-                  <i className="fas fa-times"></i>
-                </button>
-              </div>
-            </div>
-
-            {/* WhatsApp Chat Area */}
-            <div className="whatsapp-chat-area" id="whatsapp-chat-area">
-              {/* Date Divider */}
-              <div className="whatsapp-date-divider">
-                <span>Today</span>
-              </div>
-              
-
-              {/* Messages Container */}
-              <div className="whatsapp-messages-container">
-                {localDiscussions.length === 0 ? (
-                  <div className="whatsapp-empty-state">
-                    <div className="empty-state-icon">
-                      <i className="fas fa-comments"></i>
-                    </div>
-                    <h4>No messages yet</h4>
-                    <p>Start the conversation with your team</p>
-                  </div>
-                ) : (
-                  localDiscussions.map((disc, idx) => {
-                    const messageAuthor = disc?.student || disc?.author || 'Unknown';
-                    const messageTime = disc?.createdAt || disc?.timestamp || '';
-                    
-                    // Format time properly
-                    const formattedTime = messageTime ? new Date(messageTime).toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit',
-                      hour12: true 
-                    }) : '';
-                    
-                    // Check if message is from guide
-                    const isGuide = messageAuthor === 'Guide' || messageAuthor === project?.guide;
-                    
-                    return (
-                      <div key={disc?._id || disc?.id || idx} className="message-container">
-                        {/* Main Message */}
-                        <div className={`message-row ${isGuide ? 'guide-message' : 'student-message'}`}>
-                          <div className="message-bubble-wrapper">
-                            {/* Sender Name with Time */}
-                            <div className="message-sender">
-                              {isGuide ? (
-                                <span className="guide-name">
-                                  <i className="fas fa-chalkboard-teacher"></i> Guide
-                                </span>
-                              ) : (
-                                <span className="student-name">
-                                  <i className="fas fa-user-graduate"></i> {messageAuthor}
-                                </span>
-                              )}
-                              <span className="message-time">{formattedTime}</span>
-                            </div>
-                            
-                            {/* Message Bubble */}
-                            <div className={`message-bubble ${isGuide ? 'guide-bubble' : 'student-bubble'}`}>
-                              <div className="message-text">
-                                {disc?.message || ''}
-                              </div>
-                            </div>
-
-                            {/* Reply Button */}
-                            <button 
-                              className="message-reply-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setReplyTo?.(replyTo === (disc?._id || disc?.id) ? null : (disc?._id || disc?.id));
-                              }}
-                            >
-                              <i className="fas fa-reply"></i> Reply
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Replies Section */}
-                        {disc?.replies && disc.replies.length > 0 && (
-                          <div className="replies-section">
-                            {disc.replies.map((reply, replyIdx) => {
-                              const replyAuthor = reply?.student || reply?.author || 'Unknown';
-                              const replyTime = reply?.createdAt || reply?.timestamp || '';
-                              const formattedReplyTime = replyTime ? new Date(replyTime).toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit',
-                                hour12: true 
-                              }) : '';
-                              const isReplyGuide = replyAuthor === 'Guide' || replyAuthor === project?.guide;
-
-                              return (
-                                <div key={replyIdx} className={`reply-row ${isReplyGuide ? 'guide-reply' : 'student-reply'}`}>
-                                  <div className="reply-bubble-wrapper">
-                                    <div className="reply-sender">
-                                      {isReplyGuide ? (
-                                        <span className="guide-name">
-                                          <i className="fas fa-chalkboard-teacher"></i> Guide
-                                        </span>
-                                      ) : (
-                                        <span className="student-name">
-                                          <i className="fas fa-user-graduate"></i> {replyAuthor}
-                                        </span>
-                                      )}
-                                      <span className="reply-time">{formattedReplyTime}</span>
-                                    </div>
-                                    <div className={`reply-bubble ${isReplyGuide ? 'guide-bubble' : 'student-bubble'}`}>
-                                      {reply?.message || ''}
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-
-                        {/* Reply Input Field */}
-                        {replyTo === (disc?._id || disc?.id) && (
-                          <div className="reply-input-container">
-                            <div className="reply-preview">
-                              <i className="fas fa-reply"></i>
-                              <span>Replying to {messageAuthor}</span>
-                              <button 
-                                className="cancel-reply"
-                                onClick={() => setReplyTo?.(null)}
-                              >
-                                <i className="fas fa-times"></i>
-                              </button>
-                            </div>
-                            <div className="reply-input-wrapper">
-                              <textarea
-                                placeholder="Write your reply..."
-                                value={replyMessage || ''}
-                                onChange={(e) => setReplyMessage?.(e.target.value)}
-                                onKeyPress={(e) => {
-                                  if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleAddReply?.(disc?._id || disc?.id);
-                                  }
-                                }}
-                                rows="1"
-                              />
-                              <button 
-                                className="send-reply-btn"
-                                onClick={() => handleAddReply?.(disc?._id || disc?.id)}
-                                disabled={!replyMessage?.trim()}
-                              >
-                                <i className="fas fa-paper-plane"></i>
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            {/* WhatsApp Input Area */}
-            <div className="whatsapp-input-area">
-              <div className="input-wrapper">
-                <textarea
-                  placeholder="Type a message as Guide..."
-                  value={newDiscussion?.message || ''}
-                  onChange={(e) => setNewDiscussion?.({...newDiscussion, message: e.target.value})}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleDiscussionSubmit();
-                    }
-                  }}
-                  rows="1"
-                />
-              </div>
-              <button 
-                className="send-btn"
-                onClick={handleDiscussionSubmit}
-                disabled={!newDiscussion?.message?.trim()}
-              >
-                <i className="fas fa-paper-plane"></i>
-              </button>
-            </div>
+{showDiscussion && (
+  <div className="modal" onClick={onCloseModals}>
+    <div className="modal-content whatsapp-modal" onClick={e => e.stopPropagation()}>
+      
+      {/* WhatsApp-style Header */}
+      <div className="whatsapp-header">
+        <div className="whatsapp-header-left">
+          <button className="whatsapp-back-btn" onClick={onCloseModals}>
+            <i className="fas fa-arrow-left"></i>
+          </button>
+          <div className="whatsapp-chat-info">
+            <h3>{project?.name || 'Project'} Discussion</h3>
+            <span className="whatsapp-participants">
+              <i className="fas fa-users"></i> {students.length + 1} participants
+            </span>
           </div>
         </div>
-      )}
+        <div className="whatsapp-header-right">
+          <button className="whatsapp-header-btn" onClick={refreshProjectData} title="Refresh">
+            <i className={`fas fa-sync-alt ${refreshing ? 'fa-spin' : ''}`}></i>
+          </button>
+          <button className="whatsapp-header-btn" onClick={onCloseModals} title="Close">
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      {/* WhatsApp Chat Area */}
+      <div className="whatsapp-chat-area" id="whatsapp-chat-area">
+        {/* Date Divider */}
+        <div className="whatsapp-date-divider">
+          <span>Today</span>
+        </div>
+
+        {/* Messages Container */}
+        <div className="whatsapp-messages-container">
+          {localDiscussions.length === 0 ? (
+            <div className="whatsapp-empty-state">
+              <div className="empty-state-icon">
+                <i className="fas fa-comments"></i>
+              </div>
+              <h4>No messages yet</h4>
+              <p>Start the conversation with your team</p>
+            </div>
+          ) : (
+            localDiscussions.map((disc, idx) => {
+              const messageAuthor = disc?.student || disc?.author || 'Unknown';
+              const messageTime = disc?.createdAt || disc?.timestamp || '';
+              
+              const formattedTime = messageTime ? new Date(messageTime).toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+              }) : '';
+              
+              // Check if the message is FROM THE GUIDE (sender is guide)
+              const isFromGuide = messageAuthor === 'Guide' || 
+                                 messageAuthor === project?.guide || 
+                                 messageAuthor.includes('Guide');
+              
+              return (
+                <div key={disc?._id || disc?.id || idx} className="message-container">
+                  {/* Main Message */}
+                  <div className={`message-row ${isFromGuide ? 'outgoing-message' : 'incoming-message'}`}>
+                    <div className="message-bubble-wrapper">
+                      {/* Sender Name with Time */}
+                      <div className="message-sender">
+                        {isFromGuide ? (
+                          <span className="guide-name">
+                            <i className="fas fa-chalkboard-teacher"></i> You (Guide)
+                          </span>
+                        ) : (
+                          <span className="student-name">
+                            <i className="fas fa-user-graduate"></i> {messageAuthor}
+                          </span>
+                        )}
+                        <span className="message-time">{formattedTime}</span>
+                      </div>
+                      
+                      {/* Message Bubble */}
+                      <div className={`message-bubble ${isFromGuide ? 'outgoing-bubble' : 'incoming-bubble'}`}>
+                        <div className="message-text">
+                          {disc?.message || ''}
+                        </div>
+                      </div>
+
+                      {/* Reply Button */}
+                      <button 
+                        className="message-reply-btn"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setReplyTo?.(replyTo === (disc?._id || disc?.id) ? null : (disc?._id || disc?.id));
+                        }}
+                      >
+                        <i className="fas fa-reply"></i> Reply
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Replies Section */}
+                  {disc?.replies && disc.replies.length > 0 && (
+                    <div className="replies-section">
+                      {disc.replies.map((reply, replyIdx) => {
+                        const replyAuthor = reply?.student || reply?.author || 'Unknown';
+                        const replyTime = reply?.createdAt || reply?.timestamp || '';
+                        const formattedReplyTime = replyTime ? new Date(replyTime).toLocaleTimeString([], { 
+                          hour: '2-digit', 
+                          minute: '2-digit',
+                          hour12: true 
+                        }) : '';
+                        const isReplyFromGuide = replyAuthor === 'Guide' || 
+                                                replyAuthor === project?.guide || 
+                                                replyAuthor.includes('Guide');
+
+                        return (
+                          <div key={replyIdx} className={`reply-row ${isReplyFromGuide ? 'outgoing-reply' : 'incoming-reply'}`}>
+                            <div className="reply-bubble-wrapper">
+                              <div className="reply-sender">
+                                {isReplyFromGuide ? (
+                                  <span className="guide-name">
+                                    <i className="fas fa-chalkboard-teacher"></i> You (Guide)
+                                  </span>
+                                ) : (
+                                  <span className="student-name">
+                                    <i className="fas fa-user-graduate"></i> {replyAuthor}
+                                  </span>
+                                )}
+                                <span className="reply-time">{formattedReplyTime}</span>
+                              </div>
+                              <div className={`reply-bubble ${isReplyFromGuide ? 'outgoing-bubble' : 'incoming-bubble'}`}>
+                                {reply?.message || ''}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Reply Input Field */}
+                  {replyTo === (disc?._id || disc?.id) && (
+                    <div className="reply-input-container">
+                      <div className="reply-preview">
+                        <i className="fas fa-reply"></i>
+                        <span>Replying to {messageAuthor}</span>
+                        <button 
+                          className="cancel-reply"
+                          onClick={() => setReplyTo?.(null)}
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                      <div className="reply-input-wrapper">
+                        <textarea
+                          placeholder="Write your reply..."
+                          value={replyMessage || ''}
+                          onChange={(e) => setReplyMessage?.(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleAddReply?.(disc?._id || disc?.id);
+                            }
+                          }}
+                          rows="1"
+                        />
+                        <button 
+                          className="send-reply-btn"
+                          onClick={() => handleAddReply?.(disc?._id || disc?.id)}
+                          disabled={!replyMessage?.trim()}
+                        >
+                          <i className="fas fa-paper-plane"></i>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* WhatsApp Input Area */}
+      <div className="whatsapp-input-area">
+        <div className="input-wrapper">
+          <textarea
+            placeholder="Type a message as Guide..."
+            value={newDiscussion?.message || ''}
+            onChange={(e) => setNewDiscussion?.({...newDiscussion, message: e.target.value})}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleDiscussionSubmit();
+              }
+            }}
+            rows="1"
+          />
+        </div>
+        <button 
+          className="send-btn"
+          onClick={handleDiscussionSubmit}
+          disabled={!newDiscussion?.message?.trim()}
+        >
+          <i className="fas fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };
