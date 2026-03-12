@@ -2175,3 +2175,134 @@
     align-self: flex-end;
   }
 }
+/* Student Message Alignment - RIGHT side */
+.my-message-right {
+  justify-content: flex-end !important;
+  width: 100%;
+  display: flex !important;
+}
+
+.my-message-right .message-bubble-wrapper {
+  align-items: flex-end !important;
+  max-width: 65%;
+}
+
+.my-message-right .message-sender {
+  justify-content: flex-end !important;
+  flex-direction: row-reverse !important;
+}
+
+.my-bubble-right {
+  background: #005c4b !important;
+  color: white !important;
+  border-top-right-radius: 4px !important;
+  border-top-left-radius: 12px !important;
+  border-bottom-left-radius: 12px !important;
+  border-bottom-right-radius: 4px !important;
+  margin-left: auto !important;
+}
+
+/* Guide Message Alignment - LEFT side */
+.guide-message-left {
+  justify-content: flex-start !important;
+  width: 100%;
+  display: flex !important;
+}
+
+.guide-message-left .message-bubble-wrapper {
+  align-items: flex-start !important;
+  max-width: 65%;
+}
+
+.guide-message-left .message-sender {
+  justify-content: flex-start !important;
+}
+
+.guide-bubble-left {
+  background: #1f2c33 !important;
+  color: white !important;
+  border-top-left-radius: 4px !important;
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+  border-bottom-left-radius: 4px !important;
+  margin-right: auto !important;
+}
+
+/* Other Student Message Alignment - LEFT side */
+.other-message-left {
+  justify-content: flex-start !important;
+  width: 100%;
+  display: flex !important;
+}
+
+.other-message-left .message-bubble-wrapper {
+  align-items: flex-start !important;
+  max-width: 65%;
+}
+
+.other-message-left .message-sender {
+  justify-content: flex-start !important;
+}
+
+.other-bubble-left {
+  background: #2a3942 !important;
+  color: white !important;
+  border-top-left-radius: 4px !important;
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+  border-bottom-left-radius: 4px !important;
+  margin-right: auto !important;
+}
+
+/* Reply alignment */
+.my-reply-right {
+  justify-content: flex-end !important;
+}
+
+.guide-reply-left, .other-reply-left {
+  justify-content: flex-start !important;
+}
+
+.my-reply-right .reply-bubble-wrapper {
+  align-items: flex-end !important;
+}
+
+.guide-reply-left .reply-bubble-wrapper,
+.other-reply-left .reply-bubble-wrapper {
+  align-items: flex-start !important;
+}
+
+.my-reply-right .reply-sender {
+  justify-content: flex-end !important;
+  flex-direction: row-reverse !important;
+}
+
+.guide-reply-left .reply-sender,
+.other-reply-left .reply-sender {
+  justify-content: flex-start !important;
+}
+
+/* Names styling */
+.guide-name {
+  color: #feca57 !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.3rem !important;
+}
+
+.my-name {
+  color: #feca57 !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.3rem !important;
+}
+
+.other-name {
+  color: #8696a0 !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.3rem !important;
+}

@@ -587,15 +587,20 @@ const StudentProjectDetails = ({
                       hour12: true 
                     }) : '';
                     
-                    // Check if message is from current user
-                    const isCurrentUser = messageAuthor.toLowerCase() === student?.name?.toLowerCase();
-                    // Check if message is from guide
-                    const isGuide = messageAuthor === 'Guide' || messageAuthor === localProject?.guide;
+                    // IMPORTANT: Fix the alignment logic
+                    // 1. Check if message is from current student (YOUR messages) - should be on RIGHT
+                    const isCurrentUser = messageAuthor.trim().toLowerCase() === student?.name?.trim().toLowerCase();
+                    
+                    // 2. Check if message is from guide - should be on LEFT
+                    const isGuide = messageAuthor === 'Guide' || 
+                                    messageAuthor === localProject?.guide || 
+                                    messageAuthor.includes('Guide') ||
+                                    (localProject?.guide && messageAuthor.trim().toLowerCase() === localProject.guide.trim().toLowerCase());
                     
                     return (
                       <div key={disc?._id || disc?.id || idx} className="message-container">
                         {/* Main Message */}
-                        <div className={`message-row ${isCurrentUser ? 'my-message' : isGuide ? 'guide-message' : 'other-message'}`}>
+                        <div className={`message-row ${isCurrentUser ? 'my-message-right' : isGuide ? 'guide-message-left' : 'other-message-left'}`}>
                           <div className="message-bubble-wrapper">
                             {/* Sender Name with Time */}
                             <div className="message-sender">
@@ -616,7 +621,7 @@ const StudentProjectDetails = ({
                             </div>
                             
                             {/* Message Bubble with File Support */}
-                            <div className={`message-bubble ${isCurrentUser ? 'my-bubble' : isGuide ? 'guide-bubble' : 'other-bubble'}`}>
+                            <div className={`message-bubble ${isCurrentUser ? 'my-bubble-right' : isGuide ? 'guide-bubble-left' : 'other-bubble-left'}`}>
                               {/* Text Message */}
                               {disc?.message && (
                                 <div className="message-text">
@@ -681,11 +686,16 @@ const StudentProjectDetails = ({
                                 minute: '2-digit',
                                 hour12: true 
                               }) : '';
-                              const isReplyCurrentUser = replyAuthor.toLowerCase() === student?.name?.toLowerCase();
-                              const isReplyGuide = replyAuthor === 'Guide' || replyAuthor === localProject?.guide;
+                              
+                              // Fix reply alignment logic
+                              const isReplyCurrentUser = replyAuthor.trim().toLowerCase() === student?.name?.trim().toLowerCase();
+                              const isReplyGuide = replyAuthor === 'Guide' || 
+                                                  replyAuthor === localProject?.guide || 
+                                                  replyAuthor.includes('Guide') ||
+                                                  (localProject?.guide && replyAuthor.trim().toLowerCase() === localProject.guide.trim().toLowerCase());
 
                               return (
-                                <div key={replyIdx} className={`reply-row ${isReplyCurrentUser ? 'my-reply' : isReplyGuide ? 'guide-reply' : 'other-reply'}`}>
+                                <div key={replyIdx} className={`reply-row ${isReplyCurrentUser ? 'my-reply-right' : isReplyGuide ? 'guide-reply-left' : 'other-reply-left'}`}>
                                   <div className="reply-bubble-wrapper">
                                     <div className="reply-sender">
                                       {isReplyGuide ? (
@@ -703,7 +713,7 @@ const StudentProjectDetails = ({
                                       )}
                                       <span className="reply-time">{formattedReplyTime}</span>
                                     </div>
-                                    <div className={`reply-bubble ${isReplyCurrentUser ? 'my-bubble' : isReplyGuide ? 'guide-bubble' : 'other-bubble'}`}>
+                                    <div className={`reply-bubble ${isReplyCurrentUser ? 'my-bubble-right' : isReplyGuide ? 'guide-bubble-left' : 'other-bubble-left'}`}>
                                       {reply?.message || ''}
                                       {reply?.file && (
                                         <div className="message-file">
