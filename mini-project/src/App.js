@@ -7,7 +7,7 @@ import Login from './components/Login/Login';
 import Register from './components/Login/Register'; // Add this import
 import GuideDashboard from './components/Guide/GuideDashboard';
 import StudentDashboard from './components/Student/StudentDashboard';
-
+import ForgotPassword from './components/Login/ForgotPassword';
 // Protected route component
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -24,6 +24,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} /> {/* Add this route */}
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route 
             path="/guide" 
             element={

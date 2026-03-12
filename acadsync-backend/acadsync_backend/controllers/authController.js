@@ -1,7 +1,10 @@
 const User = require('../models/User');
-const Project = require('../models/Project'); // Add this import
+const Project = require('../models/Project');
+const Otp = require('../models/Otp'); // Add this import
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -229,8 +232,176 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+// @desc    Forgot Password - Send OTP
+// @route   POST /api/auth/forgot-password
+// @access  Public
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    console.log('📤 Forgot password request for:', email);
+    
+    // Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'No account found with this email address' 
+      });
+    }
+    
+    // Generate 6-digit OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    
+    // Save OTP to database (delete any existing OTP for this email)
+    await Otp.findOneAndDelete({ email });
+    await Otp.create({ email, otp });
+    
+    console.log('✅ OTP generated for:', email);
+    
+    // Configure email transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+    
+    // Email content
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'AcadSync - Password Reset OTP',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0b141a; padding: 30px; border-radius: 16px; border: 2px solid #feca57;">
+          <h2 style="color: #feca57; text-align: center; font-size: 28px; margin-bottom: 20px;">AcadSync</h2>
+          <h3 style="color: white; text-align: center;">Password Reset Request</h3>
+          <p style="color: rgba(255,255,255,0.8); text-align: center; margin: 20px 0;">Hello ${user.name},</p>
+          <p style="color: rgba(255,255,255,0.8); text-align: center;">You requested to reset your password. Use the following OTP to proceed:</p>
+          <div style="background: #1f2c33; padding: 20px; text-align: center; border-radius: 12px; margin: 25px 0; border: 1px solid #feca57;">
+            <h1 style="color: #feca57; font-size: 48px; letter-spacing: 10px; margin: 0;">${otp}</h1>
+          </div>
+          <p style="color: rgba(255,255,255,0.6); text-align: center; font-size: 14px;">This OTP is valid for 10 minutes.</p>
+          <p style="color: rgba(255,255,255,0.6); text-align: center; font-size: 14px; margin-top: 25px;">If you didn't request this, please ignore this email.</p>
+          <p style="color: rgba(255,255,255,0.8); text-align: center; margin-top: 30px;">Best regards,<br><span style="color: #feca57;">AcadSync Team</span></p>
+        </div>
+      `
+    };
+    
+    // Send email
+    await transporter.sendMail(mailOptions);
+    console.log('✅ OTP email sent to:', email);
+    
+    res.json({ 
+      success: true, 
+      message: 'OTP sent successfully' 
+    });
+    
+  } catch (error) {
+    console.error('❌ Forgot password error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to send OTP. Please try again.' 
+    });
+  }
+};
+
+// @desc    Verify OTP
+// @route   POST /api/auth/verify-otp
+// @access  Public
+const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    
+    console.log('📤 Verifying OTP for:', email);
+    
+    // Find OTP in database
+    const otpRecord = await Otp.findOne({ email, otp });
+    
+    if (!otpRecord) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid or expired OTP' 
+      });
+    }
+    
+    console.log('✅ OTP verified for:', email);
+    
+    res.json({ 
+      success: true, 
+      message: 'OTP verified successfully' 
+    });
+    
+  } catch (error) {
+    console.error('❌ Verify OTP error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to verify OTP' 
+    });
+  }
+};
+
+// @desc    Reset Password
+// @route   POST /api/auth/reset-password
+// @access  Public
+const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    
+    console.log('📤 Resetting password for:', email);
+    
+    // Verify OTP again
+    const otpRecord = await Otp.findOne({ email, otp });
+    
+    if (!otpRecord) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid or expired OTP' 
+      });
+    }
+    
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+    
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    
+    // Update password
+    user.password = hashedPassword;
+    await user.save();
+    
+    // Delete used OTP
+    await Otp.deleteOne({ _id: otpRecord._id });
+    
+    console.log('✅ Password reset for:', email);
+    
+    res.json({ 
+      success: true, 
+      message: 'Password reset successful' 
+    });
+    
+  } catch (error) {
+    console.error('❌ Reset password error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to reset password' 
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
+  forgotPassword,
+  verifyOtp,
+  resetPassword,
 };

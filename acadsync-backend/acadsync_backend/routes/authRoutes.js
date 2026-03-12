@@ -4,6 +4,9 @@ const {
   registerUser,
   loginUser,
   getUserProfile,
+  forgotPassword,
+  verifyOtp,
+  resetPassword,
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -17,6 +20,9 @@ router.use((req, res, next) => {
 // Public routes (no login required)
 router.post('/register', registerUser);
 router.post('/login', loginUser);
+router.post('/forgot-password', forgotPassword);
+router.post('/verify-otp', verifyOtp);
+router.post('/reset-password', resetPassword);
 
 // Protected route (must be logged in)
 router.get('/profile', protect, getUserProfile);

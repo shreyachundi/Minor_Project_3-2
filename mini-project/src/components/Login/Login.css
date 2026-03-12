@@ -319,3 +319,191 @@ form input::placeholder {
   margin-bottom: 20px;
   text-align: center;
 }
+/* Forgot Password Styles */
+.forgot-password-card {
+  min-width: 400px;
+}
+
+.forgot-password-link {
+  text-align: right;
+  margin: 0.5rem 0 1.5rem;
+}
+
+.forgot-password-link a {
+  color: #feca57;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.forgot-password-link a:hover {
+  color: #ffb347;
+  text-decoration: underline;
+}
+
+.back-to-login-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  transition: all 0.2s;
+}
+
+.back-to-login-btn:hover {
+  background: rgba(254, 202, 87, 0.1);
+  border-color: #feca57;
+  color: #feca57;
+}
+
+.input-with-icon {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8696a0;
+  font-size: 1rem;
+  z-index: 1;
+}
+
+.input-with-icon input {
+  width: 100%;
+  padding: 0.8rem 0.8rem 0.8rem 2.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: white;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.input-with-icon input:focus {
+  outline: none;
+  border-color: #feca57;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field .login-eye-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8696a0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.info-text {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin: 1rem 0;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* OTP Input Styles */
+.otp-input-container {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
+
+.otp-input {
+  width: 200px;
+  padding: 1rem;
+  text-align: center;
+  font-size: 1.5rem;
+  letter-spacing: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid #feca57;
+  border-radius: 12px;
+  color: white;
+  font-weight: bold;
+}
+
+.otp-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(254, 202, 87, 0.2);
+}
+
+.countdown-text {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.countdown-timer {
+  color: #feca57;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.resend-otp {
+  text-align: center;
+  margin: 1rem 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.resend-btn {
+  background: transparent;
+  border: none;
+  color: #feca57;
+  cursor: pointer;
+  font-weight: 600;
+  transition: color 0.2s;
+  font-size: 0.9rem;
+}
+
+.resend-btn:hover:not(:disabled) {
+  color: #ffb347;
+  text-decoration: underline;
+}
+
+.resend-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Success Message */
+.success-message {
+  background: rgba(29, 209, 161, 0.2);
+  border: 1px solid #1dd1a1;
+  color: #1dd1a1;
+  padding: 0.8rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .forgot-password-card {
+    min-width: auto;
+    width: 90%;
+  }
+  
+  .otp-input {
+    width: 160px;
+    font-size: 1.2rem;
+    letter-spacing: 0.3rem;
+  }
+}
