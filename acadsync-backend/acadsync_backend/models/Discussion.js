@@ -12,13 +12,38 @@ const replySchema = new mongoose.Schema({
   },
   message: {
     type: String,
-    required: true,
+    default: '',
+  },
+  file: {
+    name: String,
+    url: String,
+    size: Number,
+    type: String
   },
   timestamp: {
     type: Date,
     default: Date.now,
   },
 });
+
+const fileSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  url: {
+    type: String,
+    required: true
+  },
+  size: {
+    type: Number,
+    required: true
+  },
+  type: {
+    type: String,
+    required: true
+  }
+}, { _id: false });
 
 const discussionSchema = new mongoose.Schema({
   author: {
@@ -32,8 +57,9 @@ const discussionSchema = new mongoose.Schema({
   },
   message: {
     type: String,
-    required: true,
+    default: '',
   },
+  file: fileSchema,
   timestamp: {
     type: Date,
     default: Date.now,
@@ -48,5 +74,4 @@ const discussionSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// ✅ Make sure this line is correct
 module.exports = mongoose.model('Discussion', discussionSchema);

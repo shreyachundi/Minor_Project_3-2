@@ -24,6 +24,11 @@ const StudentProjectDetails = ({
   const [localDiscussions, setLocalDiscussions] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  // File attachment states
+  const [showFileAttachment, setShowFileAttachment] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Initialize local state when project changes
   useEffect(() => {
@@ -62,6 +67,88 @@ const StudentProjectDetails = ({
       console.error('❌ Error refreshing project data:', error);
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  // Handle file selection
+  const handleFileSelect = (e, fileType) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size should be less than 10MB');
+      return;
+    }
+    
+    // Create preview for images
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSelectedFile({
+          file: file,
+          preview: e.target.result,
+          name: file.name,
+          size: file.size,
+          type: file.type
+        });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setSelectedFile({
+        file: file,
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+    }
+    
+    setShowFileAttachment(false);
+  };
+
+  // Clear selected file
+  const clearSelectedFile = () => {
+    setSelectedFile(null);
+    setUploadProgress(0);
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!selectedFile) return;
+    
+    const formData = new FormData();
+    formData.append('file', selectedFile.file);
+    formData.append('projectId', project?._id);
+    formData.append('message', newDiscussion?.message || '');
+    
+    try {
+      // Show upload progress
+      const response = await API.post('/discussions/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        }
+      });
+      
+      if (response.data.success) {
+        // Clear states
+        clearSelectedFile();
+        setNewDiscussion?.({...newDiscussion, message: ''});
+        
+        // Refresh discussions
+        await refreshProjectData();
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Failed to upload file. Please try again.');
     }
   };
 
@@ -113,23 +200,51 @@ const StudentProjectDetails = ({
       e.stopPropagation();
     }
     
-    if (!newDiscussion?.message?.trim()) return;
+    if (!newDiscussion?.message?.trim() && !selectedFile) return;
     
-    // Store current message to clear later
-    const currentMessage = newDiscussion.message;
-    
-    try {
-      await handleAddDiscussion();
-      // Clear the message but KEEP THE MODAL OPEN
-      setNewDiscussion?.({...newDiscussion, message: ''});
+    if (selectedFile) {
+      await handleFileUpload(e);
+    } else {
+      // Store current message to clear later
+      const currentMessage = newDiscussion.message;
       
-      // Refresh data without closing modal
-      setTimeout(() => {
-        refreshProjectData();
-      }, 500);
-    } catch (error) {
-      console.error('Error sending message:', error);
+      try {
+        await handleAddDiscussion();
+        // Clear the message but KEEP THE MODAL OPEN
+        setNewDiscussion?.({...newDiscussion, message: ''});
+        
+        // Refresh data without closing modal
+        setTimeout(() => {
+          refreshProjectData();
+        }, 500);
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
     }
+  };
+
+  // Get file icon based on extension
+  const getFileIcon = (filename) => {
+    const ext = filename.split('.').pop().toLowerCase();
+    const icons = {
+      'pdf': 'fa-file-pdf',
+      'doc': 'fa-file-word',
+      'docx': 'fa-file-word',
+      'xls': 'fa-file-excel',
+      'xlsx': 'fa-file-excel',
+      'csv': 'fa-file-csv',
+      'jpg': 'fa-file-image',
+      'jpeg': 'fa-file-image',
+      'png': 'fa-file-image',
+      'gif': 'fa-file-image',
+      'zip': 'fa-file-archive',
+      'rar': 'fa-file-archive',
+      '7z': 'fa-file-archive',
+      'txt': 'fa-file-alt',
+      'mp4': 'fa-file-video',
+      'mp3': 'fa-file-audio'
+    };
+    return icons[ext] || 'fa-file';
   };
 
   // Get recent discussions for preview (last 3 messages)
@@ -304,7 +419,7 @@ const StudentProjectDetails = ({
         </div>
       )}
 
-      {/* Discussion Forum Modal - WhatsApp Style */}
+      {/* Discussion Forum Modal - WhatsApp Style with File Attachment */}
       {showDiscussion && (
         <div className="modal" onClick={onCloseModals}>
           <div className="modal-content whatsapp-modal" onClick={(e) => {
@@ -345,6 +460,106 @@ const StudentProjectDetails = ({
                 </button>
               </div>
             </div>
+
+            {/* File Attachment Modal */}
+            {showFileAttachment && (
+              <div className="file-attachment-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="file-attachment-content">
+                  <h4>Attach File</h4>
+                  <div className="file-options">
+                    <label className="file-option">
+                      <i className="fas fa-image"></i>
+                      <span>Image</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => handleFileSelect(e, 'image')}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                    <label className="file-option">
+                      <i className="fas fa-file-pdf"></i>
+                      <span>PDF</span>
+                      <input 
+                        type="file" 
+                        accept=".pdf" 
+                        onChange={(e) => handleFileSelect(e, 'pdf')}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                    <label className="file-option">
+                      <i className="fas fa-file-word"></i>
+                      <span>Document</span>
+                      <input 
+                        type="file" 
+                        accept=".doc,.docx,.txt" 
+                        onChange={(e) => handleFileSelect(e, 'document')}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                    <label className="file-option">
+                      <i className="fas fa-file-excel"></i>
+                      <span>Spreadsheet</span>
+                      <input 
+                        type="file" 
+                        accept=".xls,.xlsx,.csv" 
+                        onChange={(e) => handleFileSelect(e, 'spreadsheet')}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                    <label className="file-option">
+                      <i className="fas fa-file-archive"></i>
+                      <span>Archive</span>
+                      <input 
+                        type="file" 
+                        accept=".zip,.rar,.7z" 
+                        onChange={(e) => handleFileSelect(e, 'archive')}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                    <label className="file-option">
+                      <i className="fas fa-file"></i>
+                      <span>Other</span>
+                      <input 
+                        type="file" 
+                        onChange={(e) => handleFileSelect(e, 'other')}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  </div>
+                  <button className="cancel-file-btn" onClick={() => setShowFileAttachment(false)}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* File Preview */}
+            {selectedFile && (
+              <div className="file-preview-container" onClick={(e) => e.stopPropagation()}>
+                <div className="file-preview">
+                  {selectedFile.type.startsWith('image/') ? (
+                    <img src={selectedFile.preview} alt="Preview" className="image-preview" />
+                  ) : (
+                    <div className="file-icon-preview">
+                      <i className={`fas ${getFileIcon(selectedFile.name)}`}></i>
+                      <span className="file-name">{selectedFile.name}</span>
+                      <span className="file-size">{(selectedFile.size / 1024).toFixed(1)} KB</span>
+                    </div>
+                  )}
+                  <button className="remove-file-btn" onClick={clearSelectedFile}>
+                    <i className="fas fa-times"></i>
+                  </button>
+                </div>
+                {uploadProgress > 0 && uploadProgress < 100 && (
+                  <div className="upload-progress">
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{ width: `${uploadProgress}%` }}></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* WhatsApp Chat Area */}
             <div className="whatsapp-chat-area" id="whatsapp-chat-area" onClick={(e) => e.stopPropagation()}>
@@ -400,11 +615,45 @@ const StudentProjectDetails = ({
                               <span className="message-time">{formattedTime}</span>
                             </div>
                             
-                            {/* Message Bubble */}
+                            {/* Message Bubble with File Support */}
                             <div className={`message-bubble ${isCurrentUser ? 'my-bubble' : isGuide ? 'guide-bubble' : 'other-bubble'}`}>
-                              <div className="message-text">
-                                {disc?.message || ''}
-                              </div>
+                              {/* Text Message */}
+                              {disc?.message && (
+                                <div className="message-text">
+                                  {disc.message}
+                                </div>
+                              )}
+                              
+                              {/* File Attachment */}
+                              {disc?.file && (
+                                <div className="message-file">
+                                  {disc.file.type?.startsWith('image/') ? (
+                                    <div className="image-attachment">
+                                      <img 
+                                        src={disc.file.url} 
+                                        alt={disc.file.name}
+                                        onClick={() => window.open(disc.file.url, '_blank')}
+                                      />
+                                      <span className="file-name">{disc.file.name}</span>
+                                    </div>
+                                  ) : (
+                                    <a 
+                                      href={disc.file.url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="file-attachment"
+                                      download
+                                    >
+                                      <i className={`fas ${getFileIcon(disc.file.name)} file-icon`}></i>
+                                      <div className="file-info">
+                                        <span className="file-name">{disc.file.name}</span>
+                                        <span className="file-size">{(disc.file.size / 1024).toFixed(1)} KB</span>
+                                      </div>
+                                      <i className="fas fa-download download-icon"></i>
+                                    </a>
+                                  )}
+                                </div>
+                              )}
                             </div>
 
                             {/* Reply Button */}
@@ -456,6 +705,14 @@ const StudentProjectDetails = ({
                                     </div>
                                     <div className={`reply-bubble ${isReplyCurrentUser ? 'my-bubble' : isReplyGuide ? 'guide-bubble' : 'other-bubble'}`}>
                                       {reply?.message || ''}
+                                      {reply?.file && (
+                                        <div className="message-file">
+                                          <a href={reply.file.url} target="_blank" rel="noopener noreferrer">
+                                            <i className={`fas ${getFileIcon(reply.file.name)}`}></i>
+                                            {reply.file.name}
+                                          </a>
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
@@ -517,11 +774,24 @@ const StudentProjectDetails = ({
               </div>
             </div>
 
-            {/* WhatsApp Input Area - FIXED: Won't close modal */}
+            {/* WhatsApp Input Area - WITH FILE ATTACHMENT BUTTON */}
             <div className="whatsapp-input-area" onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
             }}>
+              {/* File Attachment Button - The + symbol */}
+              <button 
+                className="whatsapp-attach-btn"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowFileAttachment(!showFileAttachment);
+                }}
+                title="Attach file"
+              >
+                <i className="fas fa-plus"></i>
+              </button>
+              
               <div className="input-wrapper" onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -551,7 +821,7 @@ const StudentProjectDetails = ({
                   e.stopPropagation();
                   handleDiscussionSubmit(e);
                 }}
-                disabled={!newDiscussion?.message?.trim()}
+                disabled={!newDiscussion?.message?.trim() && !selectedFile}
                 type="button"
               >
                 <i className="fas fa-paper-plane"></i>

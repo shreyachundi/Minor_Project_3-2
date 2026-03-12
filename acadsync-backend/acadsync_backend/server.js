@@ -30,6 +30,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(helmet());
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
+
 // Debug middleware
 app.use((req, res, next) => {
   console.log(`\n📨 ${req.method} ${req.url}`);
@@ -51,7 +54,7 @@ app.get('/', (req, res) => {
 // Test route for manual reminder trigger
 app.post('/api/test/check-deadlines', async (req, res) => {
   try {
-    console.log('🧪 Manually checking deadlines...'); // THIS SHOULD APPEAR
+    console.log('🧪 Manually checking deadlines...');
     console.log('📋 Calling checkDeadlines function...');
     await checkDeadlines();
     console.log('✅ Deadline check completed');

@@ -4429,3 +4429,259 @@ div.whatsapp-message-wrapper span.whatsapp-time {
 .whatsapp-chat-area::-webkit-scrollbar-thumb:hover {
   background: #feca57;
 }
+/* File Attachment Button */
+.whatsapp-attach-btn {
+  background: transparent;
+  border: none;
+  color: #8696a0;
+  font-size: 1.3rem;
+  cursor: pointer;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.whatsapp-attach-btn:hover {
+  background: rgba(254, 202, 87, 0.1);
+  color: #feca57;
+  transform: rotate(90deg);
+}
+
+/* File Attachment Modal */
+.file-attachment-modal {
+  position: absolute;
+  bottom: 80px;
+  left: 20px;
+  background: #1f2c33;
+  border-radius: 16px;
+  padding: 1rem;
+  border: 2px solid #feca57;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+  animation: slideUp 0.2s ease;
+}
+
+.file-attachment-content h4 {
+  color: #feca57;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.file-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.file-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.8rem;
+  background: #2a3942;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.file-option:hover {
+  background: #3d4a53;
+  transform: translateY(-2px);
+}
+
+.file-option i {
+  font-size: 1.5rem;
+  color: #feca57;
+}
+
+.file-option span {
+  color: white;
+  font-size: 0.8rem;
+}
+
+.cancel-file-btn {
+  width: 100%;
+  padding: 0.6rem;
+  background: transparent;
+  border: 1px solid #8696a0;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-file-btn:hover {
+  background: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+/* File Preview */
+.file-preview-container {
+  padding: 0.5rem 1rem;
+  background: #1f2c33;
+  border-bottom: 1px solid #3d4a53;
+}
+
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem;
+  background: #2a3942;
+  border-radius: 8px;
+  position: relative;
+}
+
+.image-preview {
+  max-width: 60px;
+  max-height: 60px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.file-icon-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex: 1;
+}
+
+.file-icon-preview i {
+  font-size: 2rem;
+  color: #feca57;
+}
+
+.file-name {
+  color: white;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.file-size {
+  color: #8696a0;
+  font-size: 0.8rem;
+}
+
+.remove-file-btn {
+  background: transparent;
+  border: none;
+  color: #8696a0;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.remove-file-btn:hover {
+  background: #ff6b6b;
+  color: white;
+}
+
+/* File in Message */
+.message-file {
+  margin-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 0.5rem;
+}
+
+.image-attachment {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.image-attachment img {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.image-attachment img:hover {
+  transform: scale(1.02);
+}
+
+.file-attachment {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.file-attachment:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.file-attachment .file-icon {
+  font-size: 2rem;
+  color: #feca57;
+}
+
+.file-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.file-info .file-name {
+  color: white;
+  font-size: 0.9rem;
+}
+
+.file-info .file-size {
+  color: #8696a0;
+  font-size: 0.7rem;
+}
+
+.download-icon {
+  color: #feca57;
+  font-size: 1.2rem;
+}
+
+/* Upload Progress */
+.upload-progress {
+  padding: 0.5rem;
+  background: #2a3942;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
+
+.progress-bar {
+  height: 4px;
+  background: #3d4a53;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #feca57;
+  transition: width 0.3s;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .file-options {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .image-attachment img {
+    max-width: 150px;
+    max-height: 150px;
+  }
+}
