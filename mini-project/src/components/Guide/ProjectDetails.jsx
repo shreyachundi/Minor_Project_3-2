@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 import './ProjectDetails.css';
 
@@ -32,6 +33,25 @@ const ProjectDetails = ({
   setAssignToAll,
   unreadCount = 0
 }) => {
+  const navigate = useNavigate();
+  
+  // Get user role from localStorage
+  const [userRole, setUserRole] = useState('');
+
+  useEffect(() => {
+    // Get user from localStorage to know the role
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserRole(user.role);
+        console.log('👤 User role loaded:', user.role);
+      } catch (error) {
+        console.error('Error parsing user:', error);
+      }
+    }
+  }, []);
+  
   // Local state for tasks to ensure real-time updates
   const [localTasks, setLocalTasks] = useState([]);
   const [localDiscussions, setLocalDiscussions] = useState([]);
@@ -60,7 +80,7 @@ const ProjectDetails = ({
       setLocalDiscussions(sorted);
     }
   }, [project]);
-
+  
   // Refresh project data function
   const refreshProjectData = async () => {
     if (!project?._id) return;
@@ -91,7 +111,7 @@ const ProjectDetails = ({
       setRefreshing(false);
     }
   };
-
+    
   // Call refresh when project ID changes
   useEffect(() => {
     if (project?._id) {
@@ -388,6 +408,14 @@ const ProjectDetails = ({
 
   const recentDiscussions = getRecentDiscussions();
 
+  // Handle log sheet navigation with user role
+  const handleLogSheetClick = () => {
+    console.log('📋 Navigating to log sheet with role:', userRole);
+    navigate(`/logsheet/${project._id}`, { 
+      state: { userRole: userRole } 
+    });
+  };
+
   return (
     <div className="project-details-container">
       <div className="blob blob-1"></div>
@@ -472,6 +500,15 @@ const ProjectDetails = ({
               {unreadCount}
             </span>
           )}
+        </button>
+        {/* Log Sheet Button - Added here with role */}
+        <button 
+          className="action-button logsheet-btn" 
+          onClick={handleLogSheetClick}
+          style={{ background: 'linear-gradient(135deg, #9c27b0, #673ab7)' }}
+        >
+          <i className="fas fa-book"></i>
+          <span>Project Log Sheet</span>
         </button>
       </div>
 

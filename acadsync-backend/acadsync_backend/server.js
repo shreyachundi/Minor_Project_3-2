@@ -11,6 +11,7 @@ const authRoutes = require('./routes/authRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const discussionRoutes = require('./routes/discussionRoutes');
+const logSheetRoutes = require('./routes/logSheetRoutes');
 
 dotenv.config();
 connectDB();
@@ -45,6 +46,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/discussions', discussionRoutes);
+app.use('/api/logsheet', logSheetRoutes);
 
 // Test route
 app.get('/', (req, res) => {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 import './StudentProjectDetails.css';
 
@@ -19,6 +20,25 @@ const StudentProjectDetails = ({
   onCloseModals,
   unreadCount = 0
 }) => {
+  const navigate = useNavigate();
+  
+  // Get user role from localStorage
+  const [userRole, setUserRole] = useState('');
+
+  useEffect(() => {
+    // Get user from localStorage to know the role
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserRole(user.role);
+        console.log('👤 Student - User role loaded:', user.role);
+      } catch (error) {
+        console.error('Error parsing user:', error);
+      }
+    }
+  }, []);
+  
   const [localProject, setLocalProject] = useState(project);
   const [localTasks, setLocalTasks] = useState([]);
   const [localDiscussions, setLocalDiscussions] = useState([]);
@@ -255,6 +275,14 @@ const StudentProjectDetails = ({
 
   const recentDiscussions = getRecentDiscussions();
 
+  // Handle log sheet navigation with user role
+  const handleLogSheetClick = () => {
+    console.log('📋 Student navigating to log sheet with role:', userRole);
+    navigate(`/logsheet/${project._id}`, { 
+      state: { userRole: userRole } 
+    });
+  };
+
   return (
     <div className="student-project-details">
       <div className="blob blob-1"></div>
@@ -300,20 +328,35 @@ const StudentProjectDetails = ({
         <p className="progress-note">Progress tracked by guide</p>
       </div>
 
-      <button 
-        className="discussion-forum-btn" 
-        onClick={onOpenDiscussion}
-        style={{ position: 'relative' }}
-      >
-        <i className="fas fa-comments"></i>
-        <span>Discussion Forum</span>
-        {unreadCount > 0 && (
-          <span className="notification-badge">
-            {unreadCount}
-          </span>
-        )}
-        <i className="fas fa-arrow-right"></i>
-      </button>
+      {/* Action Buttons Section */}
+      <div className="action-buttons-grid">
+        <button 
+          className="action-button discussion" 
+          onClick={onOpenDiscussion}
+          style={{ position: 'relative' }}
+        >
+          <i className="fas fa-comments"></i>
+          <span>Discussion Forum</span>
+          {unreadCount > 0 && (
+            <span className="notification-badge">
+              {unreadCount}
+            </span>
+          )}
+        </button>
+
+        {/* Log Sheet Button for Students */}
+        <button 
+          className="action-button logsheet-btn" 
+          onClick={handleLogSheetClick}
+          style={{ 
+            background: 'linear-gradient(135deg, #9c27b0, #673ab7)',
+            marginLeft: '1rem'
+          }}
+        >
+          <i className="fas fa-book"></i>
+          <span>Project Log Sheet</span>
+        </button>
+      </div>
 
       <div className="tasks-section">
         <h2 className="section-title">
