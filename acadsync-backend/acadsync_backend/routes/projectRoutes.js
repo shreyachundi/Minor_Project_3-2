@@ -6,7 +6,8 @@ const {
   getProjects,
   createProject,
   getProjectById,
-  updateProject
+  updateProject,
+  notifyStudent
 } = require('../controllers/projectController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -24,6 +25,7 @@ router.get('/', protect, getProjects);
 router.get('/guide', protect, authorize('guide'), getGuideProjects);
 router.post('/', protect, authorize('guide'), createProject);
 router.put('/:id', protect, authorize('guide'), updateProject);
+router.post('/notify-student', protect, authorize('guide'), notifyStudent);
 
 // Student-only routes
 router.get('/student', protect, authorize('student'), getStudentProjects);

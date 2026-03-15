@@ -37,6 +37,11 @@ const ProjectDetails = ({
   
   // Get user role from localStorage
   const [userRole, setUserRole] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+  
+  // Local state for student name and email
+  const [studentName, setStudentName] = useState('');
+  const [studentEmail, setStudentEmail] = useState('');
 
   useEffect(() => {
     // Get user from localStorage to know the role
@@ -51,6 +56,14 @@ const ProjectDetails = ({
       }
     }
   }, []);
+  
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!showAddStudent) {
+      setStudentName('');
+      setStudentEmail('');
+    }
+  }, [showAddStudent]);
   
   // Local state for tasks to ensure real-time updates
   const [localTasks, setLocalTasks] = useState([]);
@@ -249,6 +262,56 @@ const ProjectDetails = ({
     return icons[ext] || 'fa-file';
   };
 
+  // Handle adding student with name and email
+  const handleAddStudentWithDetails = async () => {
+    if (!studentName.trim()) {
+      alert('Please enter student name');
+      return;
+    }
+
+    if (!studentEmail.trim()) {
+      alert('Please enter student email');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(studentEmail)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      setSendingEmail(true);
+      console.log('📤 Adding student:', studentName, 'with email:', studentEmail);
+      
+      // Send request to add student to project
+      const response = await API.post('/projects/notify-student', {
+        email: studentEmail,
+        projectId: project._id,
+        studentName: studentName
+      });
+
+      console.log('✅ Success:', response.data);
+      
+      // Clear inputs and close modal
+      setStudentName('');
+      setStudentEmail('');
+      onCloseModals();
+      
+      // Refresh project data to show the new student in team members
+      await refreshProjectData();
+      
+      alert(`✅ Student "${studentName}" added successfully! An email has been sent to ${studentEmail}`);
+      
+    } catch (error) {
+      console.error('❌ Error:', error);
+      alert(error.response?.data?.message || 'Failed to add student. Please try again.');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   // Safety check - if project is undefined
   if (!project) {
     return (
@@ -392,14 +455,6 @@ const ProjectDetails = ({
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  // Handle adding student
-  const handleAddStudentSubmit = async () => {
-    await handleAddStudent();
-    setTimeout(() => {
-      refreshProjectData();
-    }, 500);
-  };
-
   // Get recent discussions for preview
   const getRecentDiscussions = () => {
     if (localDiscussions.length === 0) return [];
@@ -480,14 +535,21 @@ const ProjectDetails = ({
       </div>
 
       <div className="action-buttons-grid">
-        <button className="action-button add-student" onClick={onAddStudent}>
+        {/* Add Student Button */}
+        <button 
+          className="action-button add-student" 
+          onClick={onAddStudent}
+          style={{ background: 'linear-gradient(135deg, #00b09b, #96c93d)' }}
+        >
           <i className="fas fa-user-plus"></i>
           <span>Add Student</span>
         </button>
+        
         <button className="action-button allocate-task" onClick={onAllocateTask}>
           <i className="fas fa-tasks"></i>
           <span>Allocate Task</span>
         </button>
+        
         <button 
           className="action-button discussion" 
           onClick={onOpenDiscussion}
@@ -501,7 +563,8 @@ const ProjectDetails = ({
             </span>
           )}
         </button>
-        {/* Log Sheet Button - Added here with role */}
+        
+        {/* Log Sheet Button */}
         <button 
           className="action-button logsheet-btn" 
           onClick={handleLogSheetClick}
@@ -609,22 +672,107 @@ const ProjectDetails = ({
         </div>
       )}
 
-      {/* Add Student Modal */}
+      {/* Add Student Modal - With Name and Email Fields */}
       {showAddStudent && (
         <div className="modal" onClick={onCloseModals}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h3><i className="fas fa-user-plus"></i> Add Student</h3>
-            <p className="modal-instruction">Enter the student's name to add to this project</p>
-            <input
-              type="text"
-              placeholder="Student Name"
-              value={newStudent?.name || ''}
-              onChange={(e) => setNewStudent?.({ name: e.target.value })}
-              autoFocus
-            />
+            <h3>
+              <i className="fas fa-user-plus" style={{color: '#feca57', marginRight: '10px'}}></i>
+              Add Student
+            </h3>
+            <p className="modal-instruction">
+              Enter student details. They will receive an email notification.
+            </p>
+            
+            <div style={{marginBottom: '15px'}}>
+              <label style={{color: '#feca57', display: 'block', marginBottom: '5px', textAlign: 'left'}}>
+                <i className="fas fa-user"></i> Student Name
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., John Doe"
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  marginBottom: '15px',
+                  border: '2px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.1)',
+                  color: 'white',
+                  fontSize: '1rem'
+                }}
+                autoFocus
+                required
+              />
+            </div>
+            
+            <div style={{marginBottom: '20px'}}>
+              <label style={{color: '#feca57', display: 'block', marginBottom: '5px', textAlign: 'left'}}>
+                <i className="fas fa-envelope"></i> Student Email
+              </label>
+              <input
+                type="email"
+                placeholder="student@example.com"
+                value={studentEmail}
+                onChange={(e) => setStudentEmail(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '2px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.1)',
+                  color: 'white',
+                  fontSize: '1rem'
+                }}
+                required
+              />
+            </div>
+            
+            <div className="info-box" style={{
+              background: 'rgba(254, 202, 87, 0.1)',
+              border: '1px solid #feca57',
+              borderRadius: '8px',
+              padding: '12px',
+              marginBottom: '20px'
+            }}>
+              <p style={{ color: '#feca57', margin: '0 0 5px 0', fontWeight: 'bold' }}>
+                <i className="fas fa-info-circle"></i> What happens next?
+              </p>
+              <ul style={{ color: 'rgba(255, 255, 255, 0.8)', margin: '0', paddingLeft: '20px', textAlign: 'left' }}>
+                <li>The student <strong>"{studentName || 'Name'}"</strong> will appear in Team Members</li>
+                <li>They will receive an email at: <strong>{studentEmail || 'email@example.com'}</strong></li>
+                <li>They can log in using this email address</li>
+              </ul>
+            </div>
+
             <div className="modal-actions">
-              <button onClick={onCloseModals}>Cancel</button>
-              <button onClick={handleAddStudentSubmit} className="primary">Add Student</button>
+              <button 
+                onClick={onCloseModals}
+                disabled={sendingEmail}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleAddStudentWithDetails} 
+                className="primary"
+                disabled={sendingEmail || !studentName.trim() || !studentEmail.trim()}
+                style={{
+                  background: sendingEmail ? '#666' : 'linear-gradient(135deg, #feca57, #ff9f1c)',
+                  cursor: sendingEmail ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {sendingEmail ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i> Adding...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-user-plus"></i> Add Student
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
