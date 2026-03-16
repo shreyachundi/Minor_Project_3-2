@@ -3,7 +3,7 @@ services:
     name: acadsync-backend
     runtime: node
     plan: free
-    rootDir: acadsync-backend
+    rootDir: acadsync_backend
     buildCommand: npm install
     startCommand: npm start
     envVars:
