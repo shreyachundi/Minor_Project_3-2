@@ -3,7 +3,7 @@ const Task = require('../models/Task');
 const User = require('../models/User');
 const Project = require('../models/Project');
 require('dotenv').config();
-const { sendEmail } = require('../config/emailConfig');
+const { sendEmail } = require('../config/resendService');
 
 // Function to check and send deadline reminders
 const checkDeadlines = async () => {
