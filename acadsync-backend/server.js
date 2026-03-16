@@ -14,8 +14,24 @@ const taskRoutes = require('./routes/taskRoutes');
 const discussionRoutes = require('./routes/discussionRoutes');
 const logSheetRoutes = require('./routes/logSheetRoutes');
 
+// Load environment variables FIRST
 dotenv.config();
-connectDB();
+
+// Debug environment variables BEFORE connecting to DB
+console.log('🔍 Environment variables check at startup:');
+console.log('- NODE_ENV:', process.env.NODE_ENV);
+console.log('- MONGODB_URI:', process.env.MONGODB_URI ? '✅ Set' : '❌ Undefined');
+console.log('- MONGODB_URI length:', process.env.MONGODB_URI ? process.env.MONGODB_URI.length : 0);
+console.log('- JWT_SECRET:', process.env.JWT_SECRET ? '✅ Set' : '❌ Undefined');
+console.log('- EMAIL_USER:', process.env.EMAIL_USER ? '✅ Set' : '❌ Undefined');
+console.log('- FRONTEND_URL:', process.env.FRONTEND_URL ? '✅ Set' : '❌ Undefined');
+
+// Try to connect to MongoDB
+console.log('📡 Attempting to connect to MongoDB...');
+connectDB().catch(err => {
+  console.error('❌ MongoDB connection failed:', err.message);
+  process.exit(1);
+});
 
 const app = express();
 
@@ -65,6 +81,24 @@ app.get('/health', (req, res) => {
     status: 'OK', 
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Debug endpoint to check environment variables
+app.get('/api/debug/env', (req, res) => {
+  res.json({
+    NODE_ENV: process.env.NODE_ENV,
+    MONGODB_URI_EXISTS: !!process.env.MONGODB_URI,
+    MONGODB_URI_LENGTH: process.env.MONGODB_URI ? process.env.MONGODB_URI.length : 0,
+    MONGODB_URI_PREVIEW: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 20) + '...' : 'not set',
+    JWT_SECRET_EXISTS: !!process.env.JWT_SECRET,
+    EMAIL_USER_EXISTS: !!process.env.EMAIL_USER,
+    FRONTEND_URL: process.env.FRONTEND_URL || 'not set',
+    CLIENT_URL: process.env.CLIENT_URL || 'not set',
+    ALL_ENV_KEYS: Object.keys(process.env).filter(key => 
+      !key.includes('npm') && !key.includes('_') && !key.includes('PATH')
+    ),
+    PORT: process.env.PORT
   });
 });
 
@@ -124,25 +158,12 @@ startDeadlineReminderJob();
 // Error handler
 app.use(errorHandler);
 
-// ✅ FIXED: 404 handler with named wildcard parameter
+// 404 handler with named wildcard parameter
 app.use('/*splat', (req, res) => {
   res.status(404).json({ 
     success: false, 
     message: 'Route not found',
     path: req.originalUrl
-  });
-});
-// Debug endpoint to check environment variables (add this temporarily)
-app.get('/api/debug/env', (req, res) => {
-  res.json({
-    NODE_ENV: process.env.NODE_ENV,
-    MONGODB_URI_EXISTS: !!process.env.MONGODB_URI,
-    MONGODB_URI_LENGTH: process.env.MONGODB_URI ? process.env.MONGODB_URI.length : 0,
-    MONGODB_URI_PREVIEW: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 20) + '...' : 'not set',
-    JWT_SECRET_EXISTS: !!process.env.JWT_SECRET,
-    EMAIL_USER_EXISTS: !!process.env.EMAIL_USER,
-    ALL_ENV_KEYS: Object.keys(process.env).filter(key => !key.includes('npm') && !key.includes('_')),
-    PORT: process.env.PORT
   });
 });
 
