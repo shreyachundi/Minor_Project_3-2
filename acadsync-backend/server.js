@@ -35,26 +35,40 @@ connectDB().catch(err => {
 
 const app = express();
 
-// CORS configuration - UPDATED for production
+// CORS configuration - UPDATED with your Vercel frontend URL
 const allowedOrigins = [
   'http://localhost:3000',
+  'https://minor-project-3-2.vercel.app', // Your Vercel frontend URL
   process.env.FRONTEND_URL,
   process.env.CLIENT_URL
 ].filter(Boolean);
 
+console.log('🌐 Allowed CORS origins:', allowedOrigins);
+
 app.use(cors({
   origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
+    // Allow requests with no origin (like mobile apps, curl, Postman, etc.)
+    if (!origin) {
+      console.log('✅ Request with no origin allowed');
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log(`✅ Origin allowed: ${origin}`);
+      return callback(null, true);
+    } else {
+      console.log(`❌ Origin blocked: ${origin}`);
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
       return callback(new Error(msg), false);
     }
-    return callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Middleware
 app.use(express.json());
