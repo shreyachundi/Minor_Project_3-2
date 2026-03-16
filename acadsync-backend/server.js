@@ -132,6 +132,19 @@ app.use('/*splat', (req, res) => {
     path: req.originalUrl
   });
 });
+// Debug endpoint to check environment variables (add this temporarily)
+app.get('/api/debug/env', (req, res) => {
+  res.json({
+    NODE_ENV: process.env.NODE_ENV,
+    MONGODB_URI_EXISTS: !!process.env.MONGODB_URI,
+    MONGODB_URI_LENGTH: process.env.MONGODB_URI ? process.env.MONGODB_URI.length : 0,
+    MONGODB_URI_PREVIEW: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 20) + '...' : 'not set',
+    JWT_SECRET_EXISTS: !!process.env.JWT_SECRET,
+    EMAIL_USER_EXISTS: !!process.env.EMAIL_USER,
+    ALL_ENV_KEYS: Object.keys(process.env).filter(key => !key.includes('npm') && !key.includes('_')),
+    PORT: process.env.PORT
+  });
+});
 
 const PORT = process.env.PORT || 5002;
 app.listen(PORT, () => {
