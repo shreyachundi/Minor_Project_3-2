@@ -1,10 +1,10 @@
 import axios from 'axios';
 
-// ✅ FIXED: Make sure the URL is complete
 const API = axios.create({
-  baseURL: 'http://localhost:5002/api',  // This should be correct
-  timeout: 10000,
-  withCredentials: true,
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5002/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Request interceptor
