@@ -17,6 +17,11 @@ const logSheetRoutes = require('./routes/logSheetRoutes');
 // Load environment variables FIRST
 dotenv.config();
 
+// Debug cron module
+console.log('🔧 Cron module loaded, functions available:');
+console.log('- startDeadlineReminderJob:', typeof startDeadlineReminderJob);
+console.log('- checkDeadlines:', typeof checkDeadlines);
+
 // Debug environment variables BEFORE connecting to DB
 console.log('🔍 Environment variables check at startup:');
 console.log('- NODE_ENV:', process.env.NODE_ENV);
@@ -132,8 +137,8 @@ app.get('/', (req, res) => {
   });
 });
 
-// Test route for manual reminder trigger
-app.post('/api/test/check-deadlines', async (req, res) => {
+// Test route for manual reminder trigger - CHANGED TO GET FOR EASY TESTING
+app.get('/api/test/check-deadlines', async (req, res) => {
   try {
     console.log('🧪 Manually checking deadlines...');
     await checkDeadlines();
@@ -166,8 +171,10 @@ app.get('/api/test/email', async (req, res) => {
   }
 });
 
-// Start cron job
+// Start cron job - CALLED ONLY ONCE
+console.log('⏰ About to start deadline reminder job...');
 startDeadlineReminderJob();
+console.log('⏰ startDeadlineReminderJob() called');
 
 // Error handler
 app.use(errorHandler);
