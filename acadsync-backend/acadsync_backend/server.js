@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorMiddleware');
 const { startDeadlineReminderJob, checkDeadlines } = require('./cron/deadlineReminder');
+const path = require('path');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -18,9 +19,22 @@ connectDB();
 
 const app = express();
 
-// CORS configuration
+// CORS configuration - UPDATED for production
+const allowedOrigins = [
+  'http://localhost:3000',
+  process.env.FRONTEND_URL,
+  process.env.CLIENT_URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
@@ -29,16 +43,29 @@ app.use(cors({
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
 // Serve static files from uploads directory
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Debug middleware
-app.use((req, res, next) => {
-  console.log(`\n📨 ${req.method} ${req.url}`);
-  console.log('Headers:', req.headers);
-  next();
+// Debug middleware - only in development
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log(`\n📨 ${req.method} ${req.url}`);
+    console.log('Headers:', req.headers);
+    next();
+  });
+}
+
+// Health check route
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Routes
@@ -50,16 +77,18 @@ app.use('/api/logsheet', logSheetRoutes);
 
 // Test route
 app.get('/', (req, res) => {
-  res.json({ message: '🎉 AcadSync API is running!' });
+  res.json({ 
+    message: '🎉 AcadSync API is running!',
+    environment: process.env.NODE_ENV || 'development',
+    frontend: process.env.FRONTEND_URL || 'Not configured'
+  });
 });
 
 // Test route for manual reminder trigger
 app.post('/api/test/check-deadlines', async (req, res) => {
   try {
     console.log('🧪 Manually checking deadlines...');
-    console.log('📋 Calling checkDeadlines function...');
     await checkDeadlines();
-    console.log('✅ Deadline check completed');
     res.json({ success: true, message: 'Deadline check completed' });
   } catch (error) {
     console.error('❌ Error:', error);
@@ -73,7 +102,7 @@ app.get('/api/test/email', async (req, res) => {
     const { sendEmail } = require('./config/emailConfig');
     
     const result = await sendEmail(
-      'acadsyncproject32@gmail.com',
+      process.env.EMAIL_USER || 'acadsyncproject32@gmail.com',
       '🧪 Test Email from AcadSync',
       '<h1>Test Email</h1><p>If you receive this, email is working!</p>'
     );
@@ -95,8 +124,18 @@ startDeadlineReminderJob();
 // Error handler
 app.use(errorHandler);
 
+// ✅ FIXED: 404 handler with named wildcard parameter
+app.use('/*splat', (req, res) => {
+  res.status(404).json({ 
+    success: false, 
+    message: 'Route not found',
+    path: req.originalUrl
+  });
+});
+
 const PORT = process.env.PORT || 5002;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📝 CORS enabled for: http://localhost:3000`);
+  console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`📝 Allowed origins:`, allowedOrigins);
 });
