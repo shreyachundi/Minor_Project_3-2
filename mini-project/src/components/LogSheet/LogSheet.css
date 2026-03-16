@@ -853,3 +853,110 @@
   50% { opacity: 1; }
   100% { opacity: 0.6; }
 }
+/* Header Actions */
+.header-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.print-btn {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.print-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.print-btn i {
+  font-size: 1.1rem;
+}
+
+/* Print-specific styles */
+@media print {
+  body {
+    background: white !important;
+    padding: 20px !important;
+  }
+  
+  .print-btn,
+  .edit-btn,
+  .sign-btn,
+  .hod-sign-btn,
+  .refresh-btn,
+  .back-btn,
+  .message-reply-btn,
+  .send-reply-btn,
+  .cancel-reply,
+  .file-attachment-modal,
+  .whatsapp-input-area,
+  .role-badge {
+    display: none !important;
+  }
+  
+  .logsheet-container {
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  
+  .logsheet-table {
+    border: 2px solid #000 !important;
+    page-break-inside: avoid;
+  }
+  
+  .logsheet-table th {
+    background: #f0f0f0 !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .signed {
+    background: #e8f5e9 !important;
+    border: 1px solid #4caf50 !important;
+    color: #2c3e50 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .week-cell {
+    background: #e8eaf6 !important;
+    color: #1a237e !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  /* Ensure tables don't break across pages */
+  tr {
+    page-break-inside: avoid;
+  }
+  
+  /* Add page break before HOD section if needed */
+  .hod-section {
+    page-break-before: auto;
+  }
+}
+
+/* Make sure the container doesn't have max-height when printing */
+@media screen {
+  .logsheet-container {
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+}

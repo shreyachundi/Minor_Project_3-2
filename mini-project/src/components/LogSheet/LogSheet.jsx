@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import API from '../../services/api';
 import './LogSheet.css';
 
@@ -11,6 +11,9 @@ const LogSheet = ({ projectId, userRole, userName }) => {
   const [errorDetails, setErrorDetails] = useState('');
   const [savingHallTicket, setSavingHallTicket] = useState(false);
   
+  // Add ref for print content
+  const printRef = useRef();
+
   console.log('📋 LogSheet Component - Props:', { projectId, userRole, userName });
   
   const isGuide = userRole === 'guide';
@@ -24,6 +27,83 @@ const LogSheet = ({ projectId, userRole, userName }) => {
     
     fetchLogSheet();
   }, [projectId, userRole]);
+
+  // Print function
+  const handlePrint = () => {
+    const printContent = printRef.current;
+    const originalTitle = document.title;
+    
+    // Store original styles
+    const originalStyles = document.querySelectorAll('style, link[rel="stylesheet"]');
+    const stylesHTML = Array.from(originalStyles)
+      .map(style => style.outerHTML)
+      .join('');
+
+    // Create print window
+    const printWindow = window.open('', '_blank');
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Project Log Sheet - ${logSheet?.projectTitle || 'AcadSync'}</title>
+          ${stylesHTML}
+          <style>
+            /* Print-specific styles */
+            @media print {
+              body { 
+                background: white !important; 
+                padding: 20px !important;
+              }
+              .whatsapp-attach-btn,
+              .edit-btn,
+              .sign-btn,
+              .hod-sign-btn,
+              .refresh-btn,
+              .back-btn,
+              .message-reply-btn,
+              .send-reply-btn,
+              .cancel-reply,
+              .file-attachment-modal,
+              .whatsapp-input-area,
+              .role-badge {
+                display: none !important;
+              }
+              .logsheet-container {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+              }
+              .logsheet-table {
+                border: 2px solid #000 !important;
+              }
+              .logsheet-table th {
+                background: #f0f0f0 !important;
+                color: #000 !important;
+              }
+              .signed {
+                background: #e8f5e9 !important;
+                border: 1px solid #4caf50 !important;
+                color: #2c3e50 !important;
+              }
+            }
+          </style>
+        </head>
+        <body style="background: white; padding: 40px; font-family: Arial, sans-serif;">
+          ${printContent.outerHTML}
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Print after a short delay to ensure styles are loaded
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+  };
 
   const fetchLogSheet = async () => {
     try {
@@ -145,17 +225,14 @@ const LogSheet = ({ projectId, userRole, userName }) => {
     }
   };
 
-  // Handle hall ticket change with debounce to avoid too many requests
   const handleHallTicketChange = (index, value) => {
     if (!isGuide) return;
     
-    // Update local state immediately for responsive UI
     const updated = [...logSheet.students];
     updated[index].hallTicketNumber = value;
     setLogSheet({...logSheet, students: updated});
   };
 
-  // Save hall ticket to backend when input loses focus
   const handleHallTicketBlur = async (index) => {
     if (!isGuide) return;
     
@@ -167,7 +244,6 @@ const LogSheet = ({ projectId, userRole, userName }) => {
     try {
       console.log('📤 Saving hall ticket for student:', student.name, '->', student.hallTicketNumber);
       
-      // You need to create this endpoint in your backend
       const response = await API.put(`/logsheet/student/${projectId}/${index}`, {
         hallTicketNumber: student.hallTicketNumber
       });
@@ -177,8 +253,6 @@ const LogSheet = ({ projectId, userRole, userName }) => {
     } catch (error) {
       console.error('Error saving hall ticket:', error);
       alert('Failed to save hall ticket number: ' + (error.response?.data?.message || error.message));
-      
-      // Revert to previous value on error? You might want to refetch
       fetchLogSheet();
     } finally {
       setSavingHallTicket(false);
@@ -238,8 +312,17 @@ const LogSheet = ({ projectId, userRole, userName }) => {
   }
 
   return (
-    <div className="logsheet-container">
+    <div className="logsheet-container" ref={printRef}>
       <div className="logsheet-header">
+        <div className="header-actions">
+          <button 
+            className="print-btn"
+            onClick={handlePrint}
+            title="Print Log Sheet"
+          >
+            <i className="fas fa-print"></i> Print
+          </button>
+        </div>
         <h1>G. NARAYANAMMA INSTITUTE OF TECHNOLOGY AND SCIENCE</h1>
         <h2>(Autonomous) (For Women)</h2>
         <h3>Department of Information Technology</h3>
@@ -256,6 +339,7 @@ const LogSheet = ({ projectId, userRole, userName }) => {
         )}
       </div>
 
+      {/* Rest of your existing JSX remains exactly the same */}
       <div className="logsheet-info">
         <table className="info-table">
           <tbody>
