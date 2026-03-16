@@ -68,7 +68,7 @@ app.use(cors({
 }));
 
 // Handle preflight requests
-app.options('*', cors());
+app.options('/*splat', cors());
 
 // Middleware
 app.use(express.json());
