@@ -149,20 +149,23 @@ app.get('/api/test/check-deadlines', async (req, res) => {
   }
 });
 
-// Test route for email
+// Test route for email - USING RESEND
 app.get('/api/test/email', async (req, res) => {
+  console.log('🧪 Email test endpoint called!');
   try {
-    const { sendEmail } = require('./config/emailConfig');
+    const { sendEmail } = require('./config/resendService');
     
     const result = await sendEmail(
-      process.env.EMAIL_USER || 'acadsyncproject32@gmail.com',
-      '🧪 Test Email from AcadSync',
-      '<h1>Test Email</h1><p>If you receive this, email is working!</p>'
+      'shreyachundi@gmail.com', // Your email - change if needed
+      '🧪 Test Email from AcadSync (Resend)',
+      '<h1>Test Email</h1><p>If you receive this, Resend is working!</p>'
     );
     
     if (result) {
-      res.json({ success: true, message: 'Test email sent successfully!' });
+      console.log('✅ Test email sent successfully via Resend');
+      res.json({ success: true, message: 'Test email sent successfully via Resend!' });
     } else {
+      console.log('❌ Test email failed');
       res.status(500).json({ success: false, message: 'Failed to send email' });
     }
   } catch (error) {
