@@ -2,7 +2,8 @@ const asyncHandler = require('express-async-handler');
 const Project = require('../models/Project');
 const Task = require('../models/Task');
 const Discussion = require('../models/Discussion');
-const { sendEmail } = require('../utils/emailService');
+// Remove the old emailService import
+// const { sendEmail } = require('../utils/emailService');
 
 // @desc    Get all projects for a guide
 // @route   GET /api/projects/guide
@@ -268,7 +269,9 @@ const notifyStudent = asyncHandler(async (req, res) => {
 
     console.log('✅ Student added to project:', displayName);
 
-    // Send email notification
+    // Send email notification using Resend
+    const { sendEmail } = require('../config/resendService');
+    
     const emailSubject = `You've been added to a project: ${project.name}`;
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0b141a; padding: 30px; border-radius: 16px; border: 2px solid #feca57;">
@@ -297,7 +300,13 @@ const notifyStudent = asyncHandler(async (req, res) => {
       </div>
     `;
 
-    await sendEmail(email, emailSubject, emailHtml);
+    const emailSent = await sendEmail(email, emailSubject, emailHtml);
+    
+    if (emailSent) {
+      console.log('✅ Invitation email sent to:', email);
+    } else {
+      console.log('❌ Failed to send invitation email to:', email);
+    }
 
     // Return the updated project
     res.json({
@@ -323,5 +332,5 @@ module.exports = {
   createProject,
   getProjectById,
   updateProject,
-  notifyStudent,  // This was missing before!
+  notifyStudent,
 };
