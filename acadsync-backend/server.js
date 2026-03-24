@@ -178,12 +178,27 @@ app.get('/api/test/check-deadlines', async (req, res) => {
   }
 });
 
-// Test route for email - USING BREVO SMTP (Dynamic email)
+// Test route for email - USING BREVO SMTP
 app.get('/api/test/email', async (req, res) => {
   console.log('🧪 Email test endpoint called!');
   
-  // Get email from query parameter, or use a default for testing
-  const testEmail = req.query.email || 'shreyachundi@gmail.com';
+  const testEmail = req.query.email;
+  
+  if (!testEmail) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide an email: ?email=user@example.com'
+    });
+  }
+  
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(testEmail)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide a valid email address'
+    });
+  }
   
   console.log(`📧 Sending test email to: ${testEmail}`);
   
@@ -216,8 +231,7 @@ app.get('/api/test/email', async (req, res) => {
       message: error.message 
     });
   }
-});   
-
+});
 // Start cron job
 console.log('⏰ About to start deadline reminder job...');
 startDeadlineReminderJob();

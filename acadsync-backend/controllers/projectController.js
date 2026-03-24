@@ -225,6 +225,7 @@ const notifyStudent = asyncHandler(async (req, res) => {
     const { email, projectId, studentName } = req.body;
     
     console.log('📧 Adding student:', studentName || email, 'to project:', projectId);
+    console.log('📧 Student email to send to:', email);
 
     // Validate input
     if (!email || !projectId) {
@@ -269,7 +270,7 @@ const notifyStudent = asyncHandler(async (req, res) => {
 
     console.log('✅ Student added to project:', displayName);
 
-    // Send email notification using Resend
+    // Send email notification using Brevo SMTP
     const { sendEmail } = require('../config/brevoSmtpService');
     
     const emailSubject = `You've been added to a project: ${project.name}`;
@@ -299,12 +300,14 @@ const notifyStudent = asyncHandler(async (req, res) => {
         </div>
       </div>
     `;
-// This is correct - it uses the email from request body
-const emailSent = await sendEmail(email, emailSubject, emailHtml);
+
+    console.log(`📧 Sending invitation email to: ${email}`);
+    const emailSent = await sendEmail(email, emailSubject, emailHtml);
+    
     if (emailSent) {
-      console.log('✅ Invitation email sent to:', email);
+      console.log(`✅ Invitation email sent successfully to: ${email}`);
     } else {
-      console.log('❌ Failed to send invitation email to:', email);
+      console.log(`❌ Failed to send invitation email to: ${email}`);
     }
 
     // Return the updated project
@@ -322,7 +325,6 @@ const emailSent = await sendEmail(email, emailSubject, emailHtml);
     });
   }
 });
-
 // Export all functions
 module.exports = {
   getGuideProjects,

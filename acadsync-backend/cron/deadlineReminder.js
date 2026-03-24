@@ -112,8 +112,7 @@ const checkDeadlines = async () => {
         if (!student) console.log('❌ Student missing for ID:', task.assignedToId);
         if (!project) console.log('❌ Project missing for ID:', task.projectId);
       }
-    } // <-- THIS WAS MISSING! (closing brace for the for loop)
-    
+    }
   } catch (error) {
     console.error('❌ Error in checkDeadlines:', error);
   }
