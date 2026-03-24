@@ -13,8 +13,8 @@ console.log('✅ Models loaded');
 require('dotenv').config();
 console.log('✅ dotenv configured');
 
-const { sendEmail } = require('../config/brevoService');
-console.log('✅ BervoService loaded');
+const { sendEmail } = require('../config/brevoSmtpService');
+console.log('✅ BrevoService loaded');
 
 console.log('✅ All dependencies loaded, defining functions...');
 
@@ -112,7 +112,8 @@ const checkDeadlines = async () => {
         if (!student) console.log('❌ Student missing for ID:', task.assignedToId);
         if (!project) console.log('❌ Project missing for ID:', task.projectId);
       }
-    }
+    } // <-- THIS WAS MISSING! (closing brace for the for loop)
+    
   } catch (error) {
     console.error('❌ Error in checkDeadlines:', error);
   }

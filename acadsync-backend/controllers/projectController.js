@@ -270,7 +270,7 @@ const notifyStudent = asyncHandler(async (req, res) => {
     console.log('✅ Student added to project:', displayName);
 
     // Send email notification using Resend
-    const { sendEmail } = require('../config/brevoService');
+    const { sendEmail } = require('../config/brevoSmtpService');
     
     const emailSubject = `You've been added to a project: ${project.name}`;
     const emailHtml = `
@@ -299,9 +299,8 @@ const notifyStudent = asyncHandler(async (req, res) => {
         </div>
       </div>
     `;
-
-    const emailSent = await sendEmail(email, emailSubject, emailHtml);
-    
+// This is correct - it uses the email from request body
+const emailSent = await sendEmail(email, emailSubject, emailHtml);
     if (emailSent) {
       console.log('✅ Invitation email sent to:', email);
     } else {
