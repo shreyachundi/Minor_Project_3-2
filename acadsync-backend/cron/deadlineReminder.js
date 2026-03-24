@@ -5,6 +5,28 @@ const Project = require('../models/Project');
 require('dotenv').config();
 const { sendEmail } = require('../config/resendService');
 
+console.log('='.repeat(50));
+console.log('📁 DEADLINE REMINDER MODULE LOADING...');
+console.log('='.repeat(50));
+
+const cron = require('node-cron');
+console.log('✅ node-cron loaded');
+
+const Task = require('../models/Task');
+const User = require('../models/User');
+const Project = require('../models/Project');
+console.log('✅ Models loaded');
+
+require('dotenv').config();
+console.log('✅ dotenv configured');
+
+const { sendEmail } = require('../config/resendService');
+console.log('✅ resendService loaded');
+
+console.log('✅ All dependencies loaded, defining functions...');
+
+// ... rest of your existing code
+
 // Function to check and send deadline reminders
 const checkDeadlines = async () => {
   console.log('🔍 Checking for upcoming deadlines...');
