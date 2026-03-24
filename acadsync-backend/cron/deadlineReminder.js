@@ -2,7 +2,7 @@ console.log('='.repeat(50));
 console.log('📁 DEADLINE REMINDER MODULE LOADING...');
 console.log('='.repeat(50));
 
-const cron = require('node-cron');  // ← ONLY ONCE at the top
+const cron = require('node-cron');
 console.log('✅ node-cron loaded');
 
 const Task = require('../models/Task');
@@ -20,18 +20,15 @@ console.log('✅ All dependencies loaded, defining functions...');
 
 // Function to check and send deadline reminders
 const checkDeadlines = async () => {
+  console.log('🚨🚨🚨 DEADLINE CHECK STARTED 🚨🚨🚨');
   console.log('🔍 Checking for upcoming deadlines...');
-  console.log('📧 Using email:', process.env.EMAIL_USER);
   
   try {
-    // Get tomorrow's date using a more reliable method
+    // Get tomorrow's date
     const now = new Date();
-    
-    // Create date objects for start and end of tomorrow
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
-    
     const dayAfterTomorrow = new Date(tomorrow);
     dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
     
@@ -46,11 +43,11 @@ const checkDeadlines = async () => {
     if (allTasks.length > 0) {
       console.log('📋 All tasks due dates:');
       allTasks.forEach((task, index) => {
-        console.log(`   Task ${index + 1}: ${task.title} - Due: ${task.dueDate?.toLocaleString()} - Status: ${task.status} - Reminder Sent: ${task.reminderSent}`);
+        console.log(`   Task ${index + 1}: ${task.title} - Due: ${task.dueDate?.toLocaleString()} - Status: ${task.status} - Reminder Sent: ${task.reminderSent} - Assigned To: ${task.assignedToId}`);
       });
     }
 
-    // Find tasks due tomorrow - using a more flexible date range
+    // Find tasks due tomorrow
     const tasksDueTomorrow = await Task.find({
       $and: [
         { dueDate: { $gte: tomorrow } },
@@ -63,54 +60,36 @@ const checkDeadlines = async () => {
     console.log(`📊 Found ${tasksDueTomorrow.length} tasks due tomorrow`);
 
     if (tasksDueTomorrow.length === 0) {
-      console.log('❌ No tasks due tomorrow. Check your tasks:');
-      console.log('1. Make sure task dueDate is set to tomorrow');
-      console.log('2. Task status is not "completed"');
-      console.log('3. reminderSent is false');
+      console.log('❌ No tasks due tomorrow');
       return;
     }
 
     for (const task of tasksDueTomorrow) {
       console.log(`\n📋 Processing task: ${task.title}`);
-      console.log(`📋 Task dueDate: ${task.dueDate?.toLocaleString()}`);
-      console.log(`📋 Task status: ${task.status}`);
-      console.log(`📋 reminderSent: ${task.reminderSent}`);
+      console.log(`📋 Task assignedToId: ${task.assignedToId}`);
       
       const student = await User.findById(task.assignedToId);
       const project = await Project.findById(task.projectId);
+      
+      console.log(`📧 Student found:`, student ? student.email : 'NOT FOUND');
       
       if (student && project) {
         console.log(`📧 Attempting to send email to: ${student.email}`);
         
         const emailContent = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9f9f9; padding: 20px; border-radius: 10px;">
-            <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 24px;">⏰ Task Deadline Reminder</h1>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0b141a; padding: 30px; border-radius: 16px; border: 2px solid #feca57;">
+            <h2 style="color: #feca57; text-align: center;">⏰ Task Deadline Reminder</h2>
+            <p>Hello ${student.name},</p>
+            <p>Your task <strong>${task.title}</strong> in project <strong>${project.name}</strong> is due <strong style="color: #feca57;">tomorrow</strong>!</p>
+            <div style="background: #1f2c33; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Due Date:</strong> ${new Date(task.dueDate).toLocaleDateString()}</p>
+              <p><strong>Status:</strong> ${task.status}</p>
             </div>
-            
-            <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px;">
-              <p style="font-size: 16px; color: #333;">Hello <strong style="color: #667eea;">${student.name}</strong>,</p>
-              
-              <p style="font-size: 16px; color: #333;">This is a friendly reminder that your task is due <strong style="color: #ff6b6b;">tomorrow</strong>!</p>
-              
-              <div style="background: #f0f4f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h2 style="color: #333; margin-top: 0; font-size: 18px;">📋 Task Details:</h2>
-                <p style="margin: 10px 0;"><strong>Project:</strong> ${project.name}</p>
-                <p style="margin: 10px 0;"><strong>Task:</strong> ${task.title}</p>
-                <p style="margin: 10px 0;"><strong>Due Date:</strong> ${task.dueDate.toLocaleDateString()}</p>
-                <p style="margin: 10px 0;"><strong>Status:</strong> ${task.status}</p>
-              </div>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.CLIENT_URL}/student/project/${project._id}" 
-                   style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">
-                  View Task Details
-                </a>
-              </div>
-              
-              <p style="color: #999; font-size: 12px; text-align: center; margin-top: 20px;">
-                This is an automated reminder from AcadSync.
-              </p>
+            <div style="text-align: center;">
+              <a href="${process.env.FRONTEND_URL}/student/project/${project._id}" 
+                 style="background: #feca57; color: #333; padding: 10px 20px; text-decoration: none; border-radius: 25px;">
+                View Task
+              </a>
             </div>
           </div>
         `;
@@ -137,6 +116,8 @@ const checkDeadlines = async () => {
   } catch (error) {
     console.error('❌ Error in checkDeadlines:', error);
   }
+  
+  console.log('🚨🚨🚨 DEADLINE CHECK COMPLETED 🚨🚨🚨');
 };
 
 // Export both the function and the job starter
@@ -145,18 +126,20 @@ module.exports = {
   startDeadlineReminderJob: () => {
     console.log('⏰ Scheduling deadline reminder job...');
     
-    // Run once immediately on startup for testing (after 10 seconds to ensure DB connection)
+    // Run once immediately on startup for testing (after 10 seconds)
     setTimeout(() => {
       console.log('🧪 Running initial deadline check on startup...');
       checkDeadlines();
-    }, 10000); // Wait 10 seconds after startup
+    }, 10000);
     
-    // Schedule daily at 9:00 AM
-     cron.schedule('* * * * *', checkDeadlines, {
+    // FOR TESTING: Runs every minute (remove this after testing)
+    // For production, change back to: cron.schedule('0 9 * * *', checkDeadlines, { timezone: 'Asia/Kolkata' });
+    cron.schedule('* * * * *', checkDeadlines, {
       timezone: 'Asia/Kolkata'
     });
     
-    console.log('⏰ Deadline reminder job scheduled (daily at 9:00 AM IST)');
+    console.log('⏰ Deadline reminder job scheduled (currently running every minute for testing)');
     console.log('⏰ Also running once on startup after 10 seconds');
+    console.log('⚠️ REMEMBER: Change back to daily schedule after testing!');
   }
 };

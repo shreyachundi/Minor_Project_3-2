@@ -225,6 +225,7 @@ const notifyStudent = asyncHandler(async (req, res) => {
     const { email, projectId, studentName } = req.body;
     
     console.log('📧 Adding student:', studentName || email, 'to project:', projectId);
+    console.log('📧 Student email to send to:', email); // Debug log
 
     // Validate input
     if (!email || !projectId) {
@@ -300,12 +301,13 @@ const notifyStudent = asyncHandler(async (req, res) => {
       </div>
     `;
 
+    console.log(`📧 Sending invitation email to: ${email}`);
     const emailSent = await sendEmail(email, emailSubject, emailHtml);
     
     if (emailSent) {
-      console.log('✅ Invitation email sent to:', email);
+      console.log(`✅ Invitation email sent successfully to: ${email}`);
     } else {
-      console.log('❌ Failed to send invitation email to:', email);
+      console.log(`❌ Failed to send invitation email to: ${email}`);
     }
 
     // Return the updated project
