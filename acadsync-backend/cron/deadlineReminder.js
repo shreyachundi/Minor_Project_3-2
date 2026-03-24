@@ -1,15 +1,8 @@
-const cron = require('node-cron');
-const Task = require('../models/Task');
-const User = require('../models/User');
-const Project = require('../models/Project');
-require('dotenv').config();
-const { sendEmail } = require('../config/resendService');
-
 console.log('='.repeat(50));
 console.log('📁 DEADLINE REMINDER MODULE LOADING...');
 console.log('='.repeat(50));
 
-const cron = require('node-cron');
+const cron = require('node-cron');  // ← ONLY ONCE at the top
 console.log('✅ node-cron loaded');
 
 const Task = require('../models/Task');
@@ -24,8 +17,6 @@ const { sendEmail } = require('../config/resendService');
 console.log('✅ resendService loaded');
 
 console.log('✅ All dependencies loaded, defining functions...');
-
-// ... rest of your existing code
 
 // Function to check and send deadline reminders
 const checkDeadlines = async () => {
@@ -160,7 +151,7 @@ module.exports = {
       checkDeadlines();
     }, 10000); // Wait 10 seconds after startup
     
-    // Schedule daily at 9:00 AM (changed from 8:00 to be safe)
+    // Schedule daily at 9:00 AM
     cron.schedule('0 9 * * *', checkDeadlines, {
       timezone: 'Asia/Kolkata'
     });
