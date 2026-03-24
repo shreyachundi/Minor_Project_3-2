@@ -270,8 +270,8 @@ const notifyStudent = asyncHandler(async (req, res) => {
 
     console.log('✅ Student added to project:', displayName);
 
-    // Send email notification using Brevo SMTP
-    const { sendEmail } = require('../config/brevoSmtpService');
+    // Send email notification using SendGrid
+    const { sendEmail } = require('../config/sendgridService');
     
     const emailSubject = `You've been added to a project: ${project.name}`;
     const emailHtml = `
@@ -325,6 +325,7 @@ const notifyStudent = asyncHandler(async (req, res) => {
     });
   }
 });
+
 // Export all functions
 module.exports = {
   getGuideProjects,

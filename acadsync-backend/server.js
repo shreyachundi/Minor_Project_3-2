@@ -28,7 +28,7 @@ console.log('- NODE_ENV:', process.env.NODE_ENV);
 console.log('- MONGODB_URI:', process.env.MONGODB_URI ? '✅ Set' : '❌ Undefined');
 console.log('- MONGODB_URI length:', process.env.MONGODB_URI ? process.env.MONGODB_URI.length : 0);
 console.log('- JWT_SECRET:', process.env.JWT_SECRET ? '✅ Set' : '❌ Undefined');
-console.log('- EMAIL_USER:', process.env.EMAIL_USER ? '✅ Set' : '❌ Undefined');
+console.log('- SENDGRID_API_KEY:', process.env.SENDGRID_API_KEY ? '✅ Set' : '❌ Undefined');
 console.log('- FRONTEND_URL:', process.env.FRONTEND_URL ? '✅ Set' : '❌ Undefined');
 
 // Try to connect to MongoDB
@@ -110,7 +110,7 @@ app.get('/api/debug/env', (req, res) => {
     MONGODB_URI_LENGTH: process.env.MONGODB_URI ? process.env.MONGODB_URI.length : 0,
     MONGODB_URI_PREVIEW: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 20) + '...' : 'not set',
     JWT_SECRET_EXISTS: !!process.env.JWT_SECRET,
-    EMAIL_USER_EXISTS: !!process.env.EMAIL_USER,
+    SENDGRID_API_KEY_EXISTS: !!process.env.SENDGRID_API_KEY,
     FRONTEND_URL: process.env.FRONTEND_URL || 'not set',
     CLIENT_URL: process.env.CLIENT_URL || 'not set',
     ALL_ENV_KEYS: Object.keys(process.env).filter(key => 
@@ -178,7 +178,7 @@ app.get('/api/test/check-deadlines', async (req, res) => {
   }
 });
 
-// Test route for email - USING BREVO SMTP
+// Test route for email - USING SENDGRID
 app.get('/api/test/email', async (req, res) => {
   console.log('🧪 Email test endpoint called!');
   
@@ -203,12 +203,12 @@ app.get('/api/test/email', async (req, res) => {
   console.log(`📧 Sending test email to: ${testEmail}`);
   
   try {
-    const { sendEmail } = require('./config/brevoSmtpService');
+    const { sendEmail } = require('./config/sendgridService');
     
     const result = await sendEmail(
       testEmail,
-      '🧪 Test Email from AcadSync (Brevo SMTP)',
-      '<h1>Test Email</h1><p>If you receive this, Brevo SMTP is working!</p>'
+      '🧪 Test Email from AcadSync (SendGrid)',
+      '<h1>Test Email</h1><p>If you receive this, SendGrid is working!</p>'
     );
     
     if (result) {
@@ -232,6 +232,7 @@ app.get('/api/test/email', async (req, res) => {
     });
   }
 });
+
 // Start cron job
 console.log('⏰ About to start deadline reminder job...');
 startDeadlineReminderJob();
