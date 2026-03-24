@@ -1,7 +1,7 @@
 const brevo = require('@getbrevo/brevo');
 
 const sendEmail = async (to, subject, html) => {
-  console.log('📧 Sending email via Brevo...');
+  console.log('📧 Sending via Brevo...');
   console.log('📧 To:', to);
   
   try {
@@ -9,7 +9,7 @@ const sendEmail = async (to, subject, html) => {
     apiInstance.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY;
     
     const sendSmtpEmail = {
-      // Use Brevo's own sender - NO VERIFICATION NEEDED!
+      // Use Brevo's official sender - always works, no verification needed!
       sender: { name: 'AcadSync', email: 'noreply@brevo.com' },
       to: [{ email: to }],
       subject: subject,
@@ -21,6 +21,9 @@ const sendEmail = async (to, subject, html) => {
     return true;
   } catch (error) {
     console.error('❌ Error:', error.message);
+    if (error.response) {
+      console.error('Details:', error.response.body);
+    }
     return false;
   }
 };
