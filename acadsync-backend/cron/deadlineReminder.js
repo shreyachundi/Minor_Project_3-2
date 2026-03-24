@@ -152,7 +152,7 @@ module.exports = {
     }, 10000); // Wait 10 seconds after startup
     
     // Schedule daily at 9:00 AM
-    cron.schedule('0 9 * * *', checkDeadlines, {
+     cron.schedule('* * * * *', checkDeadlines, {
       timezone: 'Asia/Kolkata'
     });
     
