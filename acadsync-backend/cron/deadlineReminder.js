@@ -119,7 +119,32 @@ const checkDeadlines = async () => {
   
   console.log('🚨🚨🚨 DEADLINE CHECK COMPLETED 🚨🚨🚨');
 };
-
+for (const task of tasksDueTomorrow) {
+  console.log(`\n📋 Processing task: ${task.title}`);
+  console.log(`📋 Task projectId: ${task.projectId}`);
+  console.log(`📋 Task assignedToId: ${task.assignedToId}`);
+  
+  // Find project - handle if not found
+  let project = null;
+  try {
+    project = await Project.findById(task.projectId);
+  } catch (err) {
+    console.log(`❌ Error finding project: ${err.message}`);
+  }
+  
+  const student = await User.findById(task.assignedToId);
+  
+  console.log(`📧 Student found:`, student ? student.email : 'NOT FOUND');
+  console.log(`📁 Project found:`, project ? project.name : 'NOT FOUND');
+  
+  if (student && project) {
+    // Send email...
+  } else {
+    console.log('❌ Student or project not found');
+    if (!student) console.log('❌ Student missing for ID:', task.assignedToId);
+    if (!project) console.log('❌ Project missing for ID:', task.projectId);
+  }
+}
 // Export both the function and the job starter
 module.exports = {
   checkDeadlines,
