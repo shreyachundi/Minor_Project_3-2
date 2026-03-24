@@ -252,7 +252,7 @@ const notifyStudent = asyncHandler(async (req, res) => {
     console.log('✅ Student added to project:', displayName);
 
     // Send email notification using Resend
-    const { sendEmail } = require('../config/resendService');
+    const { sendEmail } = require('../config/mailtrapService');
     
     const emailSubject = `You've been added to a project: ${project.name}`;
     const emailHtml = `
