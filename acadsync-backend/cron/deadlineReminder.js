@@ -13,7 +13,7 @@ console.log('✅ Models loaded');
 require('dotenv').config();
 console.log('✅ dotenv configured');
 
-const { sendEmail } = require('../config/mailtrapService');
+const { sendEmail } = require('../config/gmailService');
 console.log('✅ Resend Service loaded');
 
 console.log('✅ All dependencies loaded, defining functions...');

@@ -202,7 +202,7 @@ app.get('/api/test/email', async (req, res) => {
   console.log(`📧 Sending test email to: ${testEmail}`);
   
   try {
-    const { sendEmail } = require('./config/mailtrapService');
+    const { sendEmail } = require('./config/gmailService');
     
     const result = await sendEmail(
       testEmail,
