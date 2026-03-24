@@ -13,7 +13,7 @@ console.log('✅ Models loaded');
 require('dotenv').config();
 console.log('✅ dotenv configured');
 
-const { sendEmail } = require('../config/sendgridService');
+const { sendEmail } = require('../config/brevoService');
 console.log('✅ SendGrid Service loaded');
 
 console.log('✅ All dependencies loaded, defining functions...');

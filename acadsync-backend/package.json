@@ -13,7 +13,6 @@
   "type": "commonjs",
   "dependencies": {
     "@getbrevo/brevo": "^5.0.1",
-    "@sendgrid/mail": "^8.1.6",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",

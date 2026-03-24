@@ -217,7 +217,7 @@ const updateProject = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Add student to project and send email notification
+  // @desc    Add student to project and send email notification
 // @route   POST /api/projects/notify-student
 // @access  Private/Guide
 const notifyStudent = asyncHandler(async (req, res) => {
@@ -227,7 +227,6 @@ const notifyStudent = asyncHandler(async (req, res) => {
     console.log('📧 Adding student:', studentName || email, 'to project:', projectId);
     console.log('📧 Student email to send to:', email);
 
-    // Validate input
     if (!email || !projectId) {
       return res.status(400).json({
         success: false,
@@ -235,7 +234,6 @@ const notifyStudent = asyncHandler(async (req, res) => {
       });
     }
 
-    // Get project details
     const project = await Project.findById(projectId);
     
     if (!project) {
@@ -245,7 +243,6 @@ const notifyStudent = asyncHandler(async (req, res) => {
       });
     }
 
-    // Verify the guide owns this project
     if (project.guideId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
@@ -253,10 +250,8 @@ const notifyStudent = asyncHandler(async (req, res) => {
       });
     }
 
-    // Use provided studentName or extract from email
     const displayName = studentName || email.split('@')[0];
 
-    // Check if student is already in the project
     if (project.students.includes(displayName)) {
       return res.status(400).json({
         success: false,
@@ -271,7 +266,7 @@ const notifyStudent = asyncHandler(async (req, res) => {
     console.log('✅ Student added to project:', displayName);
 
     // Send email notification using SendGrid
-    const { sendEmail } = require('../config/sendgridService');
+    const { sendEmail } = require('../config/brevoService');
     
     const emailSubject = `You've been added to a project: ${project.name}`;
     const emailHtml = `
@@ -302,7 +297,16 @@ const notifyStudent = asyncHandler(async (req, res) => {
     `;
 
     console.log(`📧 Sending invitation email to: ${email}`);
-    const emailSent = await sendEmail(email, emailSubject, emailHtml);
+    console.log(`📧 Using FRONTEND_URL: ${process.env.FRONTEND_URL}`);
+    
+    let emailSent = false;
+    try {
+      emailSent = await sendEmail(email, emailSubject, emailHtml);
+      console.log(`📧 Email send result: ${emailSent}`);
+    } catch (emailError) {
+      console.error('❌ Email sending crashed:', emailError.message);
+      emailSent = false;
+    }
     
     if (emailSent) {
       console.log(`✅ Invitation email sent successfully to: ${email}`);
@@ -313,8 +317,9 @@ const notifyStudent = asyncHandler(async (req, res) => {
     // Return the updated project
     res.json({
       success: true,
-      message: 'Student added and notification sent successfully',
-      project: project
+      message: emailSent ? 'Student added and notification sent successfully' : 'Student added but notification failed',
+      project: project,
+      emailSent: emailSent
     });
 
   } catch (error) {
@@ -325,7 +330,6 @@ const notifyStudent = asyncHandler(async (req, res) => {
     });
   }
 });
-
 // Export all functions
 module.exports = {
   getGuideProjects,
