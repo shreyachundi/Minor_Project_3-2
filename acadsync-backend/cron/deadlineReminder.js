@@ -13,8 +13,8 @@ console.log('✅ Models loaded');
 require('dotenv').config();
 console.log('✅ dotenv configured');
 
-const { sendEmail } = require('../config/brevoService');
-console.log('✅ Brevo Service loaded');
+const { sendEmail } = require('../config/resendService');
+console.log('✅ Resend Service loaded');
 
 console.log('✅ All dependencies loaded, defining functions...');
 
@@ -58,7 +58,6 @@ const checkDeadlines = async () => {
       console.log(`📋 Task assignedToId: ${task.assignedToId}`);
       console.log(`📋 Task projectId: ${task.projectId}`);
       
-      // Get student and project
       const student = await User.findById(task.assignedToId);
       const project = await Project.findById(task.projectId);
       

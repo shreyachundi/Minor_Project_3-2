@@ -1,223 +1,4 @@
-const asyncHandler = require('express-async-handler');
-const Project = require('../models/Project');
-const Task = require('../models/Task');
-const Discussion = require('../models/Discussion');
-// Remove the old emailService import
-// const { sendEmail } = require('../utils/emailService');
-
-// @desc    Get all projects for a guide
-// @route   GET /api/projects/guide
-// @access  Private/Guide
-const getGuideProjects = asyncHandler(async (req, res) => {
-  console.log('📋 Fetching guide projects for user:', req.user.email);
-  console.log('User ID:', req.user._id);
-  
-  const projects = await Project.find({ guideId: req.user._id });
-  console.log(`✅ Found ${projects.length} projects for guide`);
-  
-  res.json({
-    success: true,
-    projects: projects || []
-  });
-});
-
-// @desc    Get all projects for a student
-// @route   GET /api/projects/student
-// @access  Private/Student
-const getStudentProjects = asyncHandler(async (req, res) => {
-  console.log('📋 Fetching student projects for user:', req.user.email);
-  console.log('User ID:', req.user._id);
-  console.log('User Name:', req.user.name);
-  
-  // Find projects where the student is in studentIds OR in students array (by name)
-  const projects = await Project.find({
-    $or: [
-      { studentIds: req.user._id },
-      { students: req.user.name }
-    ]
-  });
-  
-  console.log(`✅ Found ${projects.length} projects for student`);
-  
-  res.json({
-    success: true,
-    projects: projects || []
-  });
-});
-
-// @desc    Get all projects (unified endpoint)
-// @route   GET /api/projects
-// @access  Private
-const getProjects = asyncHandler(async (req, res) => {
-  console.log('📋 Fetching projects for user:', req.user.email);
-  console.log('User ID:', req.user._id);
-  console.log('User role:', req.user.role);
-  
-  let projects = [];
-  
-  if (req.user.role === 'guide') {
-    // Guides see projects they created
-    projects = await Project.find({ guideId: req.user._id });
-    console.log(`✅ Found ${projects.length} projects for guide`);
-  } else {
-    // Students see projects they're part of (by ID or name)
-    projects = await Project.find({
-      $or: [
-        { studentIds: req.user._id },
-        { students: req.user.name }
-      ]
-    });
-    console.log(`✅ Found ${projects.length} projects for student`);
-  }
-
-  res.json({
-    success: true,
-    projects: projects || []
-  });
-});
-
-// @desc    Create a new project
-// @route   POST /api/projects
-// @access  Private/Guide
-const createProject = asyncHandler(async (req, res) => {
-  console.log('📝 Creating new project');
-  console.log('Request body:', req.body);
-  console.log('User:', req.user.email, 'Role:', req.user.role);
-
-  const { name, students } = req.body;
-
-  // Check if user is a guide
-  if (req.user.role !== 'guide') {
-    res.status(403);
-    throw new Error('Only guides can create projects');
-  }
-
-  // Validate required fields
-  if (!name) {
-    res.status(400);
-    throw new Error('Please provide project name');
-  }
-
-  // Create project
-  const project = await Project.create({
-    name,
-    guide: req.user.name,
-    guideId: req.user._id,
-    students: students || [],
-    studentIds: []
-  });
-
-  console.log('✅ Project created and saved to DB:', project._id);
-
-  res.status(201).json({
-    success: true,
-    project
-  });
-});
-
-// @desc    Get single project with all details
-// @route   GET /api/projects/:id
-// @access  Private
-const getProjectById = asyncHandler(async (req, res) => {
-  try {
-    console.log('🔍 Fetching project by ID:', req.params.id);
-    
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: 'Project not found'
-      });
-    }
-
-    // Check if user has access to this project
-    const hasAccess = 
-      project.guideId.toString() === req.user._id.toString() ||
-      (project.studentIds && project.studentIds.includes(req.user._id)) ||
-      (project.students && project.students.includes(req.user.name));
-
-    if (!hasAccess) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to view this project'
-      });
-    }
-
-    // Fetch tasks for this project
-    const tasks = await Task.find({ projectId: project._id });
-    console.log(`📋 Found ${tasks.length} tasks for project`);
-    
-    // Fetch discussions for this project
-    const discussions = await Discussion.find({ projectId: project._id }).sort({ createdAt: -1 });
-
-    res.json({
-      success: true,
-      project: {
-        ...project.toObject(),
-        tasks: tasks || [],
-        discussions: discussions || []
-      }
-    });
-  } catch (error) {
-    console.error('❌ Error fetching project:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
-
-// @desc    Update project (add students, etc.)
-// @route   PUT /api/projects/:id
-// @access  Private (Guide only)
-const updateProject = asyncHandler(async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates = req.body;
-    
-    console.log('📝 Updating project:', id);
-    console.log('Updates:', updates);
-    
-    const project = await Project.findById(id);
-    
-    if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: 'Project not found'
-      });
-    }
-    
-    // Check if user is the guide of this project
-    if (project.guideId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to update this project'
-      });
-    }
-    
-    // Update fields
-    if (updates.name) project.name = updates.name;
-    if (updates.students) project.students = updates.students;
-    
-    await project.save();
-    
-    console.log('✅ Project updated:', project._id);
-    
-    res.json({
-      success: true,
-      project
-    });
-  } catch (error) {
-    console.error('❌ Error updating project:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
-
-  // @desc    Add student to project and send email notification
+// @desc    Add student to project and send email notification
 // @route   POST /api/projects/notify-student
 // @access  Private/Guide
 const notifyStudent = asyncHandler(async (req, res) => {
@@ -259,14 +40,13 @@ const notifyStudent = asyncHandler(async (req, res) => {
       });
     }
 
-    // Add the student name to the project's students array
     project.students.push(displayName);
     await project.save();
 
     console.log('✅ Student added to project:', displayName);
 
-    // Send email notification using SendGrid
-    const { sendEmail } = require('../config/brevoService');
+    // Send email notification using Resend
+    const { sendEmail } = require('../config/resendService');
     
     const emailSubject = `You've been added to a project: ${project.name}`;
     const emailHtml = `
@@ -297,16 +77,7 @@ const notifyStudent = asyncHandler(async (req, res) => {
     `;
 
     console.log(`📧 Sending invitation email to: ${email}`);
-    console.log(`📧 Using FRONTEND_URL: ${process.env.FRONTEND_URL}`);
-    
-    let emailSent = false;
-    try {
-      emailSent = await sendEmail(email, emailSubject, emailHtml);
-      console.log(`📧 Email send result: ${emailSent}`);
-    } catch (emailError) {
-      console.error('❌ Email sending crashed:', emailError.message);
-      emailSent = false;
-    }
+    const emailSent = await sendEmail(email, emailSubject, emailHtml);
     
     if (emailSent) {
       console.log(`✅ Invitation email sent successfully to: ${email}`);
@@ -314,7 +85,6 @@ const notifyStudent = asyncHandler(async (req, res) => {
       console.log(`❌ Failed to send invitation email to: ${email}`);
     }
 
-    // Return the updated project
     res.json({
       success: true,
       message: emailSent ? 'Student added and notification sent successfully' : 'Student added but notification failed',
@@ -330,13 +100,3 @@ const notifyStudent = asyncHandler(async (req, res) => {
     });
   }
 });
-// Export all functions
-module.exports = {
-  getGuideProjects,
-  getStudentProjects,
-  getProjects,
-  createProject,
-  getProjectById,
-  updateProject,
-  notifyStudent,
-};
