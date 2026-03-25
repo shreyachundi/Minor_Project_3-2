@@ -12,6 +12,7 @@ const sendEmail = async (to, subject, html) => {
         user: 'acadsyncproject32@gmail.com',
         pass: 'uxiivnbbnmtsebag',
       },
+      family: 4, // Force IPv4
     });
 
     const info = await transporter.sendMail({
