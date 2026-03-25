@@ -202,7 +202,8 @@ app.get('/api/test/email', async (req, res) => {
   console.log(`📧 Sending test email to: ${testEmail}`);
   
   try {
-    const { sendEmail } = require('./config/gmailService');
+    // Find and replace this line:
+const { sendEmail } = require('./config/brevoSmtpService');
     
     const result = await sendEmail(
       testEmail,

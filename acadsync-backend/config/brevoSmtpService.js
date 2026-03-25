@@ -1,16 +1,17 @@
 const nodemailer = require('nodemailer');
 
 const sendEmail = async (to, subject, html) => {
-  console.log('📧 Sending via Gmail...');
+  console.log('📧 Sending via Brevo SMTP...');
   console.log('📧 To:', to);
   console.log('📧 Subject:', subject);
   
   try {
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp-relay.brevo.com',
+      port: 587,
       auth: {
         user: 'acadsyncproject32@gmail.com',
-        pass: process.env.GMAIL_APP_PASSWORD,
+        pass: process.env.BREVO_API_KEY,
       },
     });
 
@@ -21,11 +22,11 @@ const sendEmail = async (to, subject, html) => {
       html: html,
     });
     
-    console.log('✅ Email sent!');
+    console.log('✅ Email sent via Brevo!');
     console.log('📧 Message ID:', info.messageId);
     return true;
   } catch (error) {
-    console.error('❌ Gmail error:', error.message);
+    console.error('❌ Brevo error:', error.message);
     return false;
   }
 };

@@ -13,7 +13,8 @@ console.log('✅ Models loaded');
 require('dotenv').config();
 console.log('✅ dotenv configured');
 
-const { sendEmail } = require('../config/gmailService');
+// Find and replace this line:
+const { sendEmail } = require('../config/brevoSmtpService');
 console.log('✅ Resend Service loaded');
 
 console.log('✅ All dependencies loaded, defining functions...');

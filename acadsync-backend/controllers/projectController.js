@@ -252,7 +252,8 @@ const notifyStudent = asyncHandler(async (req, res) => {
     console.log('✅ Student added to project:', displayName);
 
     // Send email notification using Resend
-    const { sendEmail } = require('../config/gmailService');
+    // Find and replace this line:
+const { sendEmail } = require('../config/brevoSmtpService');
     
     const emailSubject = `You've been added to a project: ${project.name}`;
     const emailHtml = `
