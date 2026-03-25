@@ -6,7 +6,6 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 console.log('📧 Email configuration check:');
 console.log('- RESEND_API_KEY:', process.env.RESEND_API_KEY ? '✅ Set' : '❌ Missing');
 console.log('- FROM_EMAIL:', process.env.FROM_EMAIL ? '✅ Set' : '❌ Missing');
-console.log('- CLIENT_URL:', process.env.CLIENT_URL ? '✅ Set' : '❌ Missing');
 
 const sendEmail = async (to, subject, html) => {
   try {
@@ -14,6 +13,9 @@ const sendEmail = async (to, subject, html) => {
     console.log('📧 To:', to);
     console.log('📧 From:', process.env.FROM_EMAIL);
     console.log('📧 Subject:', subject);
+    
+    // For testing, Resend only allows sending to your own email
+    // To send to others, you need to verify a domain
     
     const { data, error } = await resend.emails.send({
       from: process.env.FROM_EMAIL,
