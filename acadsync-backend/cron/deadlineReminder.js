@@ -14,7 +14,7 @@ require('dotenv').config();
 console.log('✅ dotenv configured');
 
 // Find and replace this line:
-const { sendEmail } = require('../config/brevoApiService');
+const { sendEmail } = require('../config/email');
 console.log('✅ Resend Service loaded');
 
 console.log('✅ All dependencies loaded, defining functions...');
