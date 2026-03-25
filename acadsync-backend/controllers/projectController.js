@@ -253,7 +253,7 @@ const notifyStudent = asyncHandler(async (req, res) => {
 
     // Send email notification using Resend
     // Find and replace this line:
-    const { sendEmail } = require('../config/email');
+    const { sendEmail } = require('../config/sendgridApi');
     const emailSubject = `You've been added to a project: ${project.name}`;
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0b141a; padding: 30px; border-radius: 16px; border: 2px solid #feca57;">

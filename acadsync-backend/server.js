@@ -28,7 +28,7 @@ console.log('- NODE_ENV:', process.env.NODE_ENV);
 console.log('- MONGODB_URI:', process.env.MONGODB_URI ? '✅ Set' : '❌ Undefined');
 console.log('- MONGODB_URI length:', process.env.MONGODB_URI ? process.env.MONGODB_URI.length : 0);
 console.log('- JWT_SECRET:', process.env.JWT_SECRET ? '✅ Set' : '❌ Undefined');
-console.log('- RESEND_API_KEY:', process.env.RESEND_API_KEY ? '✅ Set' : '❌ Undefined');
+console.log('- SENDGRID_API_KEY:', process.env.SENDGRID_API_KEY ? '✅ Set' : '❌ Undefined');
 console.log('- FRONTEND_URL:', process.env.FRONTEND_URL ? '✅ Set' : '❌ Undefined');
 
 // Try to connect to MongoDB
@@ -110,7 +110,7 @@ app.get('/api/debug/env', (req, res) => {
     MONGODB_URI_LENGTH: process.env.MONGODB_URI ? process.env.MONGODB_URI.length : 0,
     MONGODB_URI_PREVIEW: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 20) + '...' : 'not set',
     JWT_SECRET_EXISTS: !!process.env.JWT_SECRET,
-    RESEND_API_KEY_EXISTS: !!process.env.RESEND_API_KEY,
+    SENDGRID_API_KEY_EXISTS: !!process.env.SENDGRID_API_KEY,
     FRONTEND_URL: process.env.FRONTEND_URL || 'not set',
     CLIENT_URL: process.env.CLIENT_URL || 'not set',
     ALL_ENV_KEYS: Object.keys(process.env).filter(key => 
@@ -178,17 +178,57 @@ app.get('/api/test/check-deadlines', async (req, res) => {
   }
 });
 
+// Test route for email - USING SENDGRID API
 app.get('/api/test/email', async (req, res) => {
-  const { sendEmail } = require('./config/email');
-  const testEmail = req.query.email || 'shreyachundi@gmail.com';
+  console.log('🧪 Email test endpoint called!');
+  const testEmail = req.query.email;
   
-  const result = await sendEmail(
-    testEmail,
-    '🧪 Test Email from AcadSync',
-    '<h1>Test Email</h1><p>If you receive this, email is working!</p>'
-  );
+  if (!testEmail) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide an email: ?email=user@example.com'
+    });
+  }
   
-  res.json({ success: result, message: result ? 'Email sent' : 'Failed' });
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(testEmail)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide a valid email address'
+    });
+  }
+  
+  console.log(`📧 Sending test email to: ${testEmail}`);
+  
+  try {
+    const { sendEmail } = require('./config/sendgridApi');
+    
+    const result = await sendEmail(
+      testEmail,
+      '🧪 Test Email from AcadSync (SendGrid)',
+      '<h1>Test Email</h1><p>If you receive this, SendGrid is working!</p>'
+    );
+    
+    if (result) {
+      console.log(`✅ Test email sent successfully to ${testEmail}`);
+      res.json({ 
+        success: true, 
+        message: `Test email sent successfully to ${testEmail}!` 
+      });
+    } else {
+      console.log(`❌ Test email failed for ${testEmail}`);
+      res.status(500).json({ 
+        success: false, 
+        message: `Failed to send email to ${testEmail}` 
+      });
+    }
+  } catch (error) {
+    console.error('❌ Test email error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
 });
 
 // Start cron job
