@@ -4,7 +4,7 @@ const Otp = require('../models/Otp'); // Add this import
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const { sendEmail } = require('./emailConfig'); // Import the sendEmail function
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -259,38 +259,32 @@ const forgotPassword = async (req, res) => {
     
     console.log('✅ OTP generated for:', email);
     
-    // Configure email transporter
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    });
-    
-    // Email content
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'AcadSync - Password Reset OTP',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0b141a; padding: 30px; border-radius: 16px; border: 2px solid #feca57;">
-          <h2 style="color: #feca57; text-align: center; font-size: 28px; margin-bottom: 20px;">AcadSync</h2>
-          <h3 style="color: white; text-align: center;">Password Reset Request</h3>
-          <p style="color: rgba(255,255,255,0.8); text-align: center; margin: 20px 0;">Hello ${user.name},</p>
-          <p style="color: rgba(255,255,255,0.8); text-align: center;">You requested to reset your password. Use the following OTP to proceed:</p>
-          <div style="background: #1f2c33; padding: 20px; text-align: center; border-radius: 12px; margin: 25px 0; border: 1px solid #feca57;">
-            <h1 style="color: #feca57; font-size: 48px; letter-spacing: 10px; margin: 0;">${otp}</h1>
-          </div>
-          <p style="color: rgba(255,255,255,0.6); text-align: center; font-size: 14px;">This OTP is valid for 10 minutes.</p>
-          <p style="color: rgba(255,255,255,0.6); text-align: center; font-size: 14px; margin-top: 25px;">If you didn't request this, please ignore this email.</p>
-          <p style="color: rgba(255,255,255,0.8); text-align: center; margin-top: 30px;">Best regards,<br><span style="color: #feca57;">AcadSync Team</span></p>
+    // Email content using the same design as your original
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0b141a; padding: 30px; border-radius: 16px; border: 2px solid #feca57;">
+        <h2 style="color: #feca57; text-align: center; font-size: 28px; margin-bottom: 20px;">AcadSync</h2>
+        <h3 style="color: white; text-align: center;">Password Reset Request</h3>
+        <p style="color: rgba(255,255,255,0.8); text-align: center; margin: 20px 0;">Hello ${user.name},</p>
+        <p style="color: rgba(255,255,255,0.8); text-align: center;">You requested to reset your password. Use the following OTP to proceed:</p>
+        <div style="background: #1f2c33; padding: 20px; text-align: center; border-radius: 12px; margin: 25px 0; border: 1px solid #feca57;">
+          <h1 style="color: #feca57; font-size: 48px; letter-spacing: 10px; margin: 0;">${otp}</h1>
         </div>
-      `
-    };
+        <p style="color: rgba(255,255,255,0.6); text-align: center; font-size: 14px;">This OTP is valid for 10 minutes.</p>
+        <p style="color: rgba(255,255,255,0.6); text-align: center; font-size: 14px; margin-top: 25px;">If you didn't request this, please ignore this email.</p>
+        <p style="color: rgba(255,255,255,0.8); text-align: center; margin-top: 30px;">Best regards,<br><span style="color: #feca57;">AcadSync Team</span></p>
+      </div>
+    `;
     
-    // Send email
-    await transporter.sendMail(mailOptions);
+    // Send email using the configured sendEmail function
+    const emailSent = await sendEmail(email, 'AcadSync - Password Reset OTP', emailHtml);
+    
+    if (!emailSent) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to send OTP. Please try again.' 
+      });
+    }
+    
     console.log('✅ OTP email sent to:', email);
     
     res.json({ 

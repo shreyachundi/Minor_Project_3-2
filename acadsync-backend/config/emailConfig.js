@@ -6,17 +6,20 @@ console.log('- EMAIL_USER:', process.env.EMAIL_USER ? '✅ Set' : '❌ Missing')
 console.log('- EMAIL_PASS length:', process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : '❌ Missing');
 console.log('- CLIENT_URL:', process.env.CLIENT_URL ? '✅ Set' : '❌ Missing');
 
-// Create transporter with explicit settings
+// Create transporter with Zoho Mail India settings
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // use SSL
+  host: 'smtp.zoho.in',     // India server
+  port: 465,                 // SSL port
+  secure: true,              // Use SSL
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
-  debug: true, // Enable debug logs
-  logger: true // Log information
+  tls: {
+    rejectUnauthorized: false
+  },
+  debug: true,
+  logger: true
 });
 
 // Verify connection immediately
@@ -27,7 +30,7 @@ transporter.verify((error, success) => {
     console.error('Error message:', error.message);
     console.error('Full error:', error);
   } else {
-    console.log('✅ Email transporter is ready to send messages');
+    console.log('✅ Email transporter is ready to send messages using Zoho Mail (India Server)');
   }
 });
 
