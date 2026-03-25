@@ -4,7 +4,7 @@ const Otp = require('../models/Otp'); // Add this import
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const { sendEmail } = require('./emailConfig'); // Import the sendEmail function
+const { sendEmail } = require('../config/emailConfig'); // Correct path// Import the sendEmail function
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
