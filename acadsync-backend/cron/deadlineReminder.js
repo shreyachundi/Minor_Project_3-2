@@ -13,9 +13,8 @@ console.log('✅ Models loaded');
 require('dotenv').config();
 console.log('✅ dotenv configured');
 
-// Find and replace this line:
- const { sendEmail } = require('./config/email');
-console.log('✅ Resend Service loaded');
+const { sendEmail } = require('../config/email');
+console.log('✅ Email Service loaded');
 
 console.log('✅ All dependencies loaded, defining functions...');
 

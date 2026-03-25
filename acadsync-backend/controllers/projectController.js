@@ -204,7 +204,7 @@ const updateProject = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Add student to project and send email notification
+    // @desc    Add student to project and send email notification
 // @route   POST /api/projects/notify-student
 // @access  Private/Guide
 const notifyStudent = asyncHandler(async (req, res) => {
@@ -251,9 +251,9 @@ const notifyStudent = asyncHandler(async (req, res) => {
 
     console.log('✅ Student added to project:', displayName);
 
-    // Send email notification using Resend
-    // Find and replace this line:
-     const { sendEmail } = require('./config/email');
+    // Send email notification using Gmail
+    const { sendEmail } = require('../config/email');
+    
     const emailSubject = `You've been added to a project: ${project.name}`;
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0b141a; padding: 30px; border-radius: 16px; border: 2px solid #feca57;">
