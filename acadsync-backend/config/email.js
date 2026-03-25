@@ -1,33 +1,30 @@
 const nodemailer = require('nodemailer');
 
 const sendEmail = async (to, subject, html) => {
-  console.log('📧 Sending email to:', to);
+  console.log('📧 Sending to:', to);
   
-  try {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: 'acadsyncproject32@gmail.com',
-        pass: 'uxiivnbbnmtsebag',
-      },
-      family: 4, // Force IPv4
-    });
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    port: 587,
+    secure: false, // false for port 587
+    auth: {
+      user: 'acadsyncproject32@gmail.com',
+      pass: 'uxiivnbbnmtsebag',
+    },
+    family: 4, // Force IPv4
+    connectionTimeout: 10000,
+    socketTimeout: 10000,
+  });
 
-    const info = await transporter.sendMail({
-      from: 'acadsyncproject32@gmail.com',
-      to: to,
-      subject: subject,
-      html: html,
-    });
-    
-    console.log('✅ Email sent!', info.messageId);
-    return true;
-  } catch (error) {
-    console.error('❌ Error:', error.message);
-    return false;
-  }
+  await transporter.sendMail({
+    from: 'acadsyncproject32@gmail.com',
+    to: to,
+    subject: subject,
+    html: html,
+  });
+  
+  console.log('✅ Sent!');
+  return true;
 };
 
 module.exports = { sendEmail };

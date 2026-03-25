@@ -178,59 +178,17 @@ app.get('/api/test/check-deadlines', async (req, res) => {
   }
 });
 
-// Test route for email - USING SENDGRID API
 app.get('/api/test/email', async (req, res) => {
-  console.log('🧪 Email test endpoint called!');
-  const testEmail = req.query.email;
-  
-  if (!testEmail) {
-    return res.status(400).json({
-      success: false,
-      message: 'Please provide an email: ?email=user@example.com'
-    });
-  }
-  
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(testEmail)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Please provide a valid email address'
-    });
-  }
-  
-  console.log(`📧 Sending test email to: ${testEmail}`);
+  const { sendEmail } = require('./config/email');
+  const email = req.query.email || 'shreyachundi@gmail.com';
   
   try {
-    const { sendEmail } = require('./config/sendgridApi');
-    
-    const result = await sendEmail(
-      testEmail,
-      '🧪 Test Email from AcadSync (SendGrid)',
-      '<h1>Test Email</h1><p>If you receive this, SendGrid is working!</p>'
-    );
-    
-    if (result) {
-      console.log(`✅ Test email sent successfully to ${testEmail}`);
-      res.json({ 
-        success: true, 
-        message: `Test email sent successfully to ${testEmail}!` 
-      });
-    } else {
-      console.log(`❌ Test email failed for ${testEmail}`);
-      res.status(500).json({ 
-        success: false, 
-        message: `Failed to send email to ${testEmail}` 
-      });
-    }
+    await sendEmail(email, 'Test', '<h1>Working!</h1>');
+    res.json({ success: true, message: 'Email sent!' });
   } catch (error) {
-    console.error('❌ Test email error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
+    res.json({ success: false, message: error.message });
   }
 });
-
 // Start cron job
 console.log('⏰ About to start deadline reminder job...');
 startDeadlineReminderJob();
