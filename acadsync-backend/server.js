@@ -203,8 +203,7 @@ app.get('/api/test/email', async (req, res) => {
   
   try {
     // Find and replace this line:
-const { sendEmail } = require('./config/brevoSmtpService');
-    
+    const { sendEmail } = require('../config/brevoApiService');
     const result = await sendEmail(
       testEmail,
       '🧪 Test Email from AcadSync (Resend)',
