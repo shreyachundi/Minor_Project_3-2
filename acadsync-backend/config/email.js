@@ -6,20 +6,17 @@ console.log('- EMAIL_USER:', process.env.EMAIL_USER ? '✅ Set' : '❌ Missing')
 console.log('- EMAIL_PASS length:', process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : '❌ Missing');
 console.log('- CLIENT_URL:', process.env.CLIENT_URL ? '✅ Set' : '❌ Missing');
 
-// Create transporter with Zoho Mail settings
+// Create transporter with Gmail settings
 const transporter = nodemailer.createTransport({
-  host: 'smtp.zoho.com',
-  port: 587,
-  secure: false, // false for port 587
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // use SSL
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
-  tls: {
-    rejectUnauthorized: false
-  },
-  debug: true,
-  logger: true
+  debug: true, // Enable debug logs
+  logger: true // Log information
 });
 
 // Verify connection immediately
@@ -30,7 +27,7 @@ transporter.verify((error, success) => {
     console.error('Error message:', error.message);
     console.error('Full error:', error);
   } else {
-    console.log('✅ Email transporter is ready to send messages using Zoho Mail');
+    console.log('✅ Email transporter is ready to send messages using Gmail');
   }
 });
 
