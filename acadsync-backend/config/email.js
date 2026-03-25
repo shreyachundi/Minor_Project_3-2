@@ -6,12 +6,12 @@ const sendEmail = async (to, subject, html) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     port: 587,
-    secure: false, // false for port 587
+    secure: false,
     auth: {
       user: 'acadsyncproject32@gmail.com',
       pass: 'uxiivnbbnmtsebag',
     },
-    family: 4, // Force IPv4
+    family: 4,
     connectionTimeout: 10000,
     socketTimeout: 10000,
   });
