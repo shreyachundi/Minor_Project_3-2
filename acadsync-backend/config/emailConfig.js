@@ -1,59 +1,37 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-// Log credentials at startup (safely)
+// Initialize Resend with API key
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 console.log('📧 Email configuration check:');
-console.log('- EMAIL_USER:', process.env.EMAIL_USER ? '✅ Set' : '❌ Missing');
-console.log('- EMAIL_PASS length:', process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : '❌ Missing');
+console.log('- RESEND_API_KEY:', process.env.RESEND_API_KEY ? '✅ Set' : '❌ Missing');
+console.log('- FROM_EMAIL:', process.env.FROM_EMAIL ? '✅ Set' : '❌ Missing');
 console.log('- CLIENT_URL:', process.env.CLIENT_URL ? '✅ Set' : '❌ Missing');
-
-// Create transporter with Gmail settings
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // use SSL
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  debug: true, // Enable debug logs
-  logger: true // Log information
-});
-
-// Verify connection immediately
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ Email transporter verification failed:');
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
-    console.error('Full error:', error);
-  } else {
-    console.log('✅ Email transporter is ready to send messages using Gmail');
-  }
-});
 
 const sendEmail = async (to, subject, html) => {
   try {
     console.log('📧 Preparing to send email...');
     console.log('📧 To:', to);
-    console.log('📧 From:', process.env.EMAIL_USER);
+    console.log('📧 From:', process.env.FROM_EMAIL);
     console.log('📧 Subject:', subject);
     
-    const mailOptions = {
-      from: `"AcadSync" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html
-    };
+    const { data, error } = await resend.emails.send({
+      from: process.env.FROM_EMAIL,
+      to: [to],
+      subject: subject,
+      html: html
+    });
 
-    const info = await transporter.sendMail(mailOptions);
+    if (error) {
+      console.error('❌ Resend error:', error);
+      return false;
+    }
+
     console.log(`✅ Email sent successfully!`);
-    console.log(`✅ Message ID: ${info.messageId}`);
+    console.log(`✅ Message ID: ${data?.id}`);
     return true;
   } catch (error) {
-    console.error('❌ Email sending failed:');
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
-    console.error('Full error:', error);
+    console.error('❌ Email sending failed:', error.message);
     return false;
   }
 };
