@@ -1,11 +1,20 @@
 const express = require('express');
 const dotenv = require('dotenv');
+const path = require('path');
+
+// Load environment variables FIRST - before anything else
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+// Debug: Check if email variables loaded at startup
+console.log('🔍 SERVER STARTUP - EMAIL_USER:', process.env.EMAIL_USER ? '✅ Set' : '❌ Missing');
+console.log('🔍 SERVER STARTUP - EMAIL_PASS:', process.env.EMAIL_PASS ? '✅ Set' : '❌ Missing');
+console.log('🔍 SERVER STARTUP - NODE_ENV:', process.env.NODE_ENV);
+
 const cors = require('cors');
 const helmet = require('helmet');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorMiddleware');
 const { startDeadlineReminderJob, checkDeadlines } = require('./cron/deadlineReminder');
-const path = require('path');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -13,9 +22,6 @@ const projectRoutes = require('./routes/projectRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const discussionRoutes = require('./routes/discussionRoutes');
 const logSheetRoutes = require('./routes/logSheetRoutes');
-
-// Load environment variables FIRST
-dotenv.config();
 
 // Debug cron module
 console.log('🔧 Cron module loaded, functions available:');
@@ -105,6 +111,8 @@ app.get('/health', (req, res) => {
 app.get('/api/debug/env', (req, res) => {
   res.json({
     NODE_ENV: process.env.NODE_ENV,
+    EMAIL_USER_EXISTS: !!process.env.EMAIL_USER,
+    EMAIL_PASS_EXISTS: !!process.env.EMAIL_PASS,
     MONGODB_URI_EXISTS: !!process.env.MONGODB_URI,
     MONGODB_URI_LENGTH: process.env.MONGODB_URI ? process.env.MONGODB_URI.length : 0,
     MONGODB_URI_PREVIEW: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 20) + '...' : 'not set',

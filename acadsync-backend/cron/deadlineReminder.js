@@ -1,22 +1,8 @@
-console.log('='.repeat(50));
-console.log('📁 DEADLINE REMINDER MODULE LOADING...');
-console.log('='.repeat(50));
-
 const cron = require('node-cron');
-console.log('✅ node-cron loaded');
-
 const Task = require('../models/Task');
-const User = require('../models/User');
-const Project = require('../models/Project');
-console.log('✅ Models loaded');
-
-require('dotenv').config();
-console.log('✅ dotenv configured');
-
 const { sendEmail } = require('../config/email');
-console.log('✅ Email Service loaded');
 
-console.log('✅ All dependencies loaded, defining functions...');
+console.log('📁 DEADLINE REMINDER MODULE LOADING...');
 
 // Function to check and send deadline reminders
 const checkDeadlines = async () => {
@@ -34,17 +20,13 @@ const checkDeadlines = async () => {
     
     console.log('📅 Current time:', now.toLocaleString());
     console.log('📅 Tomorrow start:', tomorrow.toLocaleString());
-    console.log('📅 Tomorrow end:', dayAfterTomorrow.toLocaleString());
 
     // Find tasks due tomorrow
     const tasksDueTomorrow = await Task.find({
-      $and: [
-        { dueDate: { $gte: tomorrow } },
-        { dueDate: { $lt: dayAfterTomorrow } },
-        { status: { $ne: 'completed' } },
-        { reminderSent: false }
-      ]
-    });
+      dueDate: { $gte: tomorrow, $lt: dayAfterTomorrow },
+      status: { $ne: 'completed' },
+      reminderSent: false
+    }).populate('assignedToId').populate('projectId');
 
     console.log(`📊 Found ${tasksDueTomorrow.length} tasks due tomorrow`);
 
@@ -54,19 +36,13 @@ const checkDeadlines = async () => {
     }
 
     for (const task of tasksDueTomorrow) {
-      console.log(`\n📋 Processing task: ${task.title}`);
-      console.log(`📋 Task assignedToId: ${task.assignedToId}`);
-      console.log(`📋 Task projectId: ${task.projectId}`);
+      const student = task.assignedToId;
+      const project = task.projectId;
       
-      const student = await User.findById(task.assignedToId);
-      const project = await Project.findById(task.projectId);
+      console.log(`\n📋 Task: ${task.title}`);
+      console.log(`📧 Student: ${student?.email || 'No email'}`);
       
-      console.log(`📧 Student found:`, student ? student.email : 'NOT FOUND');
-      console.log(`📁 Project found:`, project ? project.name : 'NOT FOUND');
-      
-      if (student && project) {
-        console.log(`📧 Attempting to send email to: ${student.email}`);
-        
+      if (student && student.email && project) {
         const emailContent = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0b141a; padding: 30px; border-radius: 16px; border: 2px solid #feca57;">
             <h2 style="color: #feca57; text-align: center;">⏰ Task Deadline Reminder</h2>
@@ -96,39 +72,34 @@ const checkDeadlines = async () => {
           await task.save();
           console.log(`✅ Reminder sent to ${student.email}`);
         } else {
-          console.log(`❌ Failed to send email to ${student.email}`);
+          console.log(`❌ Failed to send to ${student.email}`);
         }
-      } else {
-        console.log('❌ Student or project not found');
-        if (!student) console.log('❌ Student missing for ID:', task.assignedToId);
-        if (!project) console.log('❌ Project missing for ID:', task.projectId);
       }
     }
   } catch (error) {
-    console.error('❌ Error in checkDeadlines:', error);
+    console.error('❌ Error:', error.message);
   }
   
   console.log('🚨🚨🚨 DEADLINE CHECK COMPLETED 🚨🚨🚨');
 };
 
-// Export both the function and the job starter
+// Start the cron job
+const startDeadlineReminderJob = () => {
+  console.log('⏰ Scheduling deadline reminder job (every 20 minutes)...');
+  
+  setTimeout(() => {
+    console.log('🧪 Running initial deadline check...');
+    checkDeadlines();
+  }, 5000);
+  
+  cron.schedule('*/20 * * * *', checkDeadlines, {
+    timezone: 'Asia/Kolkata'
+  });
+  
+  console.log('⏰ Job scheduled for every 20 minutes');
+};
+
 module.exports = {
   checkDeadlines,
-  startDeadlineReminderJob: () => {
-    console.log('⏰ Scheduling deadline reminder job...');
-    
-    // Run once immediately on startup for testing (after 10 seconds)
-    setTimeout(() => {
-      console.log('🧪 Running initial deadline check on startup...');
-      checkDeadlines();
-    }, 10000);
-    
-    // Schedule daily at 9:00 AM IST
-    cron.schedule('0 9 * * *', checkDeadlines, {
-      timezone: 'Asia/Kolkata'
-    });
-    
-    console.log('⏰ Deadline reminder job scheduled (daily at 9:00 AM IST)');
-    console.log('⏰ Also running once on startup after 10 seconds');
-  }
+  startDeadlineReminderJob
 };
